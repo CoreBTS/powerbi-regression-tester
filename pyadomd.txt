@@ -48,6 +48,7 @@ class Cursor:
     def __init__(self, connection:AdomdConnection):
         self._conn = connection
         self._description:List[Description] = []
+        self._row_count: int = 0
 
     def close(self) -> None:
         """
@@ -78,6 +79,8 @@ class Cursor:
         """
         Fetches the current line from the last executed query
         """
+        self._row_count = 0
+
         while(self._reader.Read()):
             yield tuple(convert(self._reader.GetFieldType(i).ToString(), self._reader[i], adomd_type_map) for i in range(self._field_count))
 
@@ -94,6 +97,7 @@ class Cursor:
                 l.append(next(self.fetchone()))
         except StopIteration:
             pass
+        
         return l
 
     def fetchall(self) -> List[Tuple[T, ...]]:
@@ -101,8 +105,35 @@ class Cursor:
         Fetches all the rows from the last executed query
         """
         # mypy issues with list comprehension :-( 
-        return [i for i in self.fetchone()] # type: ignore
+        _last_results = [i for i in self.fetchone()]
+        self._row_count = len(_last_results)
 
+        return _last_results # type: ignore
+
+    def nextresult(self) -> bool:
+        """
+        Moves to the next result set in the current query
+        """
+        try:
+            return self._reader.NextResult()
+        except AttributeError:
+            return False
+
+    @property
+    def rowcount(self) -> int:
+        """
+        Returns the number of rows fetched by the last fetchall() call.
+        """
+        return self._row_count
+            
+    @property
+    def has_rows(self) -> bool:
+        try:
+            state = self._reader.HasRows
+        except AttributeError:
+            return True        
+        return state
+    
     @property
     def is_closed(self) -> bool:
         try:
