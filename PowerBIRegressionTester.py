@@ -6,6 +6,8 @@ import glob
 import hashlib
 import pandas as pd
 import importlib.util
+from enum import Enum
+from tabulate import tabulate
 
 class PowerBIRegressionTester:
     """
@@ -14,7 +16,16 @@ class PowerBIRegressionTester:
     and comparison, as well as mapping visuals to their page names.
     """
 
-    def __init__(self, project_name, working_directory, connection_string, pbi_report_folder):
+    QUERIES_BASE_FOLDER = "Query Files"
+    BASELINE_FOLDER_NAME = "baseline"
+    BASELINE_CSV_FILE = "baseline.csv"
+    BASELINE_PARQUET_FILE = "baseline.parquet"
+
+    class QueryType(Enum):
+        DAX_STUDIO = "DAXSTUDIO"
+        PERFORMANCE_ANALYZER = "PERFORMANCEANALYZER"
+
+    def __init__(self, project_folder, connection_string, pbi_report_folder, query_type = QueryType.PERFORMANCE_ANALYZER):
         """
         Initialize the regression tester with project and environment details.
 
@@ -24,15 +35,30 @@ class PowerBIRegressionTester:
             connection_string (str): Connection string for the Power BI semantic model.
             pbi_report_folder (str): Path to the folder containing the Power BI report definition.
         """
-        self.project_name = project_name
-        self.working_directory = working_directory
+        self.project_name = project_folder
+        self.working_directory = os.getcwd()
+        # self.server = server
+        # self.catalog = model
+        # self.connection_string = f"Provider=MSOLAP;Data Source={server};Initial Catalog={model}"
         self.connection_string = connection_string
         self.pbi_report_folder = pbi_report_folder
-        self.project_folder = os.path.join(working_directory, project_name)
-        self.pbi_pa_folder = os.path.join(self.project_folder, "PBI PA Files")
-        self.baseline_folder = os.path.join(self.project_folder, "baseline")
-        self.baseline_csv_file = os.path.join(self.baseline_folder, "baseline.csv")
-        self.baseline_parquet_file = os.path.join(self.baseline_folder, "baseline.parquet")
+        self.project_folder = os.path.join(self.working_directory, project_folder)
+        # self.pbi_pa_folder = os.path.join(self.project_folder, self.QUERIES_BASE_FOLDER)
+        
+        self.baseline_folder = os.path.join(self.project_folder, self.BASELINE_FOLDER_NAME)
+        self.baseline_csv_file = os.path.join(self.baseline_folder, self.BASELINE_CSV_FILE)
+        self.baseline_parquet_file = os.path.join(self.baseline_folder, self.BASELINE_PARQUET_FILE)
+        self.instance_folder_base = os.path.join(self.project_folder, "instance")
+        self.query_type = query_type
+
+        self.query_subfolder = None
+        if self.query_type == self.QueryType.DAX_STUDIO:
+            self.query_subfolder = "DAX Studio"
+        elif self.query_type == self.QueryType.PERFORMANCE_ANALYZER:
+            self.query_subfolder = "PBI Performance Analyzer"
+
+        self.query_folder = os.path.join(self.project_folder, self.QUERIES_BASE_FOLDER, self.query_subfolder)
+
 
         adomd_path = r'C:\Program Files\Microsoft.NET\ADOMD.NET\160'
 
@@ -45,12 +71,12 @@ class PowerBIRegressionTester:
             path.append(adomd_path)
 
     @classmethod
-    def for_compare_only(cls, project_name, working_directory):
+    def for_compare_only(cls, project_folder, query_type = QueryType.PERFORMANCE_ANALYZER):
         """
         Alternate constructor for compare-only usage (no connection string or ADOMD.NET dependency).
 
         Args:
-            project_name (str): Name of the Power BI project.
+            project_folder (str): Name of the Power BI project.
             working_directory (str): Path to the working directory.
             pbi_report_folder (str): Path to the folder containing the Power BI report definition.
 
@@ -58,14 +84,26 @@ class PowerBIRegressionTester:
             PowerBIRegressionTester: An instance with only file paths set.
         """
         obj = cls.__new__(cls)
-        obj.project_name = project_name
-        obj.working_directory = working_directory
-        obj.project_folder = os.path.join(working_directory, project_name)
-        obj.pbi_pa_folder = os.path.join(obj.project_folder, "PBI PA Files")
-        obj.baseline_folder = os.path.join(obj.project_folder, "baseline")
-        obj.baseline_csv_file = os.path.join(obj.baseline_folder, "baseline.csv")
-        obj.baseline_parquet_file = os.path.join(obj.baseline_folder, "baseline.parquet")
+        obj.project_folder = project_folder
+        obj.working_directory = os.getcwd()
+        obj.project_folder = os.path.join(obj.working_directory, project_folder)
+        # obj.pbi_pa_folder = os.path.join(obj.project_folder, cls.QUERIES_FOLDER)
+        obj.baseline_folder = os.path.join(obj.project_folder, cls.BASELINE_FOLDER_NAME)
+        obj.baseline_csv_file = os.path.join(obj.baseline_folder, cls.BASELINE_CSV_FILE)
+        obj.baseline_parquet_file = os.path.join(obj.baseline_folder, cls.BASELINE_PARQUET_FILE)
+        obj.instance_folder_base = os.path.join(obj.project_folder, "instance")
         obj.connection_string = None  # Not needed for compare-only
+
+        obj.query_type = query_type
+
+        obj.query_subfolder = None
+        if obj.query_type == obj.QueryType.DAX_STUDIO:
+            obj.query_subfolder = "DAX Studio"
+        elif obj.query_type == obj.QueryType.PERFORMANCE_ANALYZER:
+            obj.query_subfolder = "PBI Performance Analyzer"
+
+        obj.query_folder = os.path.join(obj.project_folder, obj.QUERIES_BASE_FOLDER, obj.query_subfolder)
+
         return obj
 
     def baseline_exists(self):
@@ -87,7 +125,7 @@ class PowerBIRegressionTester:
         Returns:
             bool: True if the instance parquet file exists, False otherwise.
         """
-        instance_folder = os.path.join(self.project_folder, instance_name)
+        instance_folder = os.path.join(self.instance_folder_base, instance_name)
         instance_parquet_file = os.path.join(instance_folder, f"{instance_name}.parquet")
         return os.path.isfile(instance_parquet_file)
         
@@ -215,18 +253,75 @@ class PowerBIRegressionTester:
             pd.DataFrame: Combined DataFrame of all events.
         """
         all_dfs = []
-        for json_path in glob.glob(os.path.join(self.pbi_pa_folder, r"*.json")):
+        for json_path in glob.glob(os.path.join(self.query_folder, r"*.json")):
             with open(json_path, "r", encoding="utf-8-sig") as f:
                 data = json.load(f)
             events = data.get("events", [])
-            id_map = {event['id']: event for event in events if 'id' in event}
             flat_events = [self.flatten_event(e) for e in events]
             df = pd.DataFrame(flat_events)
             if not df.empty:
-                df['visualId'] = df['id'].apply(lambda x: self.find_visual_id(id_map, x))
+                id_map = {event['id']: event for event in events if 'id' in event}
+                df['VisualID'] = df['id'].apply(lambda x: self.find_visual_id(id_map, x))
+                if self.pbi_report_folder:
+                    df = self.add_page_names_to_df(df, self.pbi_report_folder)
+                else:
+                    df['PageName'] = ""
+
                 all_dfs.append(df)
         if all_dfs:
-            return pd.concat(all_dfs, ignore_index=True)
+            concat_df = pd.concat(all_dfs, ignore_index=True)
+            filtered_df = concat_df[concat_df['name'] == 'Execute DAX Query'].copy()
+            filtered_df.drop_duplicates(inplace=True)
+
+            filtered_df = filtered_df.rename(columns={
+                "id": "ID", 
+                "QueryText": "Query"
+            })
+            filtered_df = filtered_df.drop(['name', 'component', 'start',
+                                            'end', 'sourceLabel', 'end', 'status', 'visualTitle', 'visualType', 
+                                            'visualId', 'initialLoad', 'parentId'], axis=1)
+
+            return filtered_df
+        return pd.DataFrame()
+
+    def load_events_DAX_Studio(self):
+        """
+        Load and flatten all events from JSON files in the PBI PA Files folder.
+
+        Returns:
+            pd.DataFrame: Combined DataFrame of all events.
+        """
+        all_dfs = []
+        for json_path in glob.glob(os.path.join(self.query_folder, r"*.json")):
+            with open(json_path, "r", encoding="utf-8-sig") as f:
+                data = json.load(f)
+            events = data
+            # id_map = {event['id']: event for event in events if 'id' in event}
+            #flat_events = [self.flatten_event(e) for e in events]
+            df = pd.DataFrame(events)
+            if not df.empty:
+                # df['visualId'] = df['id'].apply(lambda x: self.find_visual_id(id_map, x))
+                # df = self.add_page_names_to_df(df, self.pbi_report_folder)
+                df['VisualID'] = ""
+                df['PageName'] = ""
+                df['RowCount'] = 0
+                df['ResultSets'] = 0
+                all_dfs.append(df)
+        if all_dfs:
+            concat_df = pd.concat(all_dfs, ignore_index=True)
+            filtered_df = concat_df[concat_df['QueryType'] == 'DAX'].copy()
+            filtered_df.drop_duplicates(inplace=True)
+
+            filtered_df = filtered_df.rename(columns={
+                "RequestID": "ID"
+                #"old_name2": "new_name2"
+            })
+            filtered_df = filtered_df.drop(['Duration', 'StartTime', 'EndTime',
+                                            'Username', 'DatabaseName', 'QueryType',
+                                            'AggregationMatchCount', 'AggregationMissCount',
+                                            'RequestProperties', 'RequestParameters', 'ActivityID'], axis=1)
+
+            return filtered_df
         return pd.DataFrame()
 
     def execute_queries(self, filtered_df):
@@ -240,15 +335,16 @@ class PowerBIRegressionTester:
             pd.DataFrame: DataFrame with result set and query hashes.
         """
         from pyadomd import Pyadomd
-        filtered_df['result_sets'] = 0
-        filtered_df['combined_query_hash'] = ""
+        filtered_df['ResultSets'] = 0
+        filtered_df['CombinedQueryHash'] = ""
         with Pyadomd(self.connection_string) as conn:
             for idx, row in filtered_df.iterrows():
-                query_id = row['id']
-                query_text = row['QueryText']
+                query_id = row['ID']
+                query_text = row['Query']
                 try:
                     with conn.cursor().execute(query_text) as cur:
                         result_set_index = 0
+                        row_count = 0
                         resultset_hashes = []
                         has_next = True
                         while has_next:
@@ -258,20 +354,22 @@ class PowerBIRegressionTester:
                             if result_rows:
                                 result_df = pd.DataFrame(result_rows, columns=columns)
                                 if not result_df.empty:
+                                    row_count += len(result_df)
                                     result_df['row_hash'] = result_df.apply(self.row_hash, axis=1)
                                     result_df = result_df.sort_values('row_hash').reset_index(drop=True)
                                     row_hashes = '|'.join(result_df['row_hash'].tolist())
                                     combined_row_hash = hashlib.sha256(row_hashes.encode('utf-8')).hexdigest()
                                     resultset_hashes.append(combined_row_hash)
                             has_next = cur.nextresult()
-                        filtered_df.loc[idx, 'result_sets'] = result_set_index
+                        filtered_df.loc[idx, 'ResultSets'] = result_set_index
+                        filtered_df.loc[idx, 'RowCount'] = row_count
                         if resultset_hashes:
                             resultset_hashes.sort()
                             combined = '|'.join(resultset_hashes)
                             combined_query_hash = hashlib.sha256(combined.encode('utf-8')).hexdigest()
-                            filtered_df.loc[idx, 'combined_query_hash'] = combined_query_hash
+                            filtered_df.loc[idx, 'CombinedQueryHash'] = combined_query_hash
                         else:
-                            filtered_df.loc[idx, 'combined_query_hash'] = None
+                            filtered_df.loc[idx, 'CombinedQueryHash'] = None
                 except Exception as e:
                     print(f"Error executing query {query_id}: {e}\n")
         return filtered_df
@@ -293,9 +391,9 @@ class PowerBIRegressionTester:
             sys.exit(1)
         baseline_df = pd.read_parquet(self.baseline_parquet_file)
         comparison_df = filtered_df.merge(
-            baseline_df, on='id', suffixes=('', '_baseline'), how='outer', indicator=True
+            baseline_df, on='ID', suffixes=('', '_baseline'), how='outer', indicator=True
         )
-        cols_to_compare = ['combined_query_hash']
+        cols_to_compare = ['CombinedQueryHash']
         diff_mask = (comparison_df['_merge'] == 'both') & (
             comparison_df[[col for col in cols_to_compare]].ne(
                 comparison_df[[f"{col}_baseline" for col in cols_to_compare]].values
@@ -311,23 +409,68 @@ class PowerBIRegressionTester:
         Returns:
             pd.DataFrame: The processed DataFrame ready for baseline or comparison.
         """
-        final_df = self.load_events()
-        pd.set_option('display.max_columns', None)
-        pd.set_option('display.max_rows', 20)
-        filtered_df = final_df[final_df['name'] == 'Execute DAX Query'].copy()
-        filtered_df.drop_duplicates(inplace=True)
+
+        # Columns from a PA PBI file
+        # ['name', 'component', 'start', 'id', 'sourceLabel', 'end', 'status', 'visualTitle', 'visualId', 'visualType', 'initialLoad', 'parentId', 'QueryText', 'RowCount']
+
+        if self.query_type == self.QueryType.DAX_STUDIO:
+            final_df = self.load_events_DAX_Studio()
+        elif self.query_type == self.QueryType.PERFORMANCE_ANALYZER:
+            final_df = self.load_events()
+        else:
+            raise ValueError("Unsupported query type. Use DAX_STUDIO or PERFORMANCE_ANALYZER.")
+        
+        final_df['Query'] = final_df['Query'].apply(normalize_line_endings)
+                                                    
+        # final_df['QueryHash'] = final_df['Query'].apply(lambda x: hashlib.sha256(str(x).encode('utf-8')).hexdigest())
+
+        # pd.set_option('display.max_columns', None)
+        # pd.set_option('display.max_rows', 20)
+        filtered_df = final_df
+
+
         filtered_df = self.execute_queries(filtered_df)
-        all_hashes = filtered_df['combined_query_hash'].dropna().astype(str).tolist()
+        all_hashes = filtered_df['CombinedQueryHash'].dropna().astype(str).tolist()
         combined = '|'.join(all_hashes)
         final_overall_hash = hashlib.sha256(combined.encode('utf-8')).hexdigest()
-        filtered_df['final_overall_hash'] = final_overall_hash
-        filtered_df = self.add_page_names_to_df(filtered_df, self.pbi_report_folder)
-        filtered_df = filtered_df[
-            ['id', 'parentId', 'visualId', 'QueryText', 'RowCount', 'result_sets',
-             'combined_query_hash', 'final_overall_hash', 'pageName']
-        ]
+        filtered_df['FinalOverallHash'] = final_overall_hash
+        # filtered_df = self.add_page_names_to_df(filtered_df, self.pbi_report_folder)
+        # filtered_df = filtered_df[
+        #     ['id', 'parentId', 'visualId', 'QueryText', 'RowCount', 'ResultSets',
+        #      'CombinedQueryHash', 'final_overall_hash', 'pageName']
+        # ]
         return filtered_df
 
+
+    # def prepare_df_DAX_Studio(self):
+    #     """
+    #     Shared logic to load, filter, and process events, execute queries, and compute hashes.
+
+    #     Returns:
+    #         pd.DataFrame: The processed DataFrame ready for baseline or comparison.
+    #     """
+
+    #     # Columns from a PA PBI file
+    #     # ['name', 'component', 'start', 'id', 'sourceLabel', 'end', 'status', 'visualTitle', 'visualId', 'visualType', 'initialLoad', 'parentId', 'QueryText', 'RowCount']
+
+    #     final_df = self.load_events_DAX_Studio()
+    #     pd.set_option('display.max_columns', None)
+    #     pd.set_option('display.max_rows', 20)
+    #     filtered_df = final_df
+    #     # filtered_df = final_df[final_df['name'] == 'Execute DAX Query'].copy()
+    #     # filtered_df.drop_duplicates(inplace=True)
+    #     filtered_df = self.execute_queries(filtered_df)
+    #     all_hashes = filtered_df['CombinedQueryHash'].dropna().astype(str).tolist()
+    #     combined = '|'.join(all_hashes)
+    #     final_overall_hash = hashlib.sha256(combined.encode('utf-8')).hexdigest()
+    #     filtered_df['FinalOverallHash'] = final_overall_hash
+    #     # filtered_df = self.add_page_names_to_df(filtered_df, self.pbi_report_folder)
+    #     # filtered_df = filtered_df[
+    #     #     ['id', 'parentId', 'visualId', 'QueryText', 'RowCount', 'ResultSets',
+    #     #      'CombinedQueryHash', 'final_overall_hash', 'pageName']
+    #     # ]
+    #     return filtered_df
+    
     def run_baseline(self):
         """
         Create and save a new baseline DataFrame.
@@ -335,7 +478,15 @@ class PowerBIRegressionTester:
         Returns:
             pd.DataFrame: The baseline DataFrame.
         """
+        # if self.query_type == self.QueryType.DAX_STUDIO:
+        #     filtered_df = self.prepare_df_DAX_Studio()
+        # elif self.query_type == self.QueryType.PERFORMANCE_ANALYZER:
+        #     filtered_df = self.prepare_df()
+        # else:
+        #     raise ValueError("Unsupported query type. Use DAX_STUDIO or PERFORMANCE_ANALYZER.")
+        
         filtered_df = self.prepare_df()
+        os.makedirs(self.baseline_folder, exist_ok=True)
         filtered_df.to_csv(self.baseline_csv_file, index=False)
         filtered_df.to_parquet(self.baseline_parquet_file, index=False)
         return filtered_df
@@ -351,10 +502,17 @@ class PowerBIRegressionTester:
             pd.DataFrame: DataFrame of value differences.
         """
         instance_df = self.prepare_df()
-        instance_folder = os.path.join(self.project_folder, instance_name)
+        instance_folder = os.path.join(self.instance_folder_base, instance_name)
         os.makedirs(instance_folder, exist_ok=True)
         instance_csv_file = os.path.join(instance_folder, f"{instance_name}.csv")
         instance_parquet_file = os.path.join(instance_folder, f"{instance_name}.parquet")
+
+        # # convert to \r\n for Windows compatibility in  CSV and Parquet files
+        # # Step 1: Normalize everything to \n
+        # instance_df['Query'] = instance_df['Query'].str.replace('\r\n', '\n').str.replace('\r', '\n')
+        # # Step 2: Convert to Windows-style CRLF
+        # instance_df['Query'] = instance_df['Query'].str.replace('\n', '\r\n')
+
         instance_df.to_csv(instance_csv_file, index=False)
         instance_df.to_parquet(instance_parquet_file, index=False)
         value_diffs = self.compare_with_baseline(instance_df)
@@ -378,7 +536,7 @@ class PowerBIRegressionTester:
             print(f"Instance '{instance_name}' does not exist. Please run the instance first.")
             sys.exit(1)
 
-        instance_folder = os.path.join(self.project_folder, instance_name)
+        instance_folder = os.path.join(self.instance_folder_base, instance_name)
         instance_parquet_file = os.path.join(instance_folder, f"{instance_name}.parquet")
         instance_df = pd.read_parquet(instance_parquet_file)
 
@@ -403,3 +561,11 @@ class PowerBIRegressionTester:
         # ]
         # value_diffs = self.add_page_names_to_df(value_diffs, self.pbi_report_folder)
         # return value_diffs
+
+def normalize_line_endings(text: str) -> str:
+    return text.replace('\r\n', '\n').replace('\r', '\n')
+
+def normalize_to_crlf(s):
+    if pd.isna(s):
+        return s
+    return s.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
