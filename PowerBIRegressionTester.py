@@ -20,12 +20,14 @@ class PowerBIRegressionTester:
     BASELINE_FOLDER_NAME = "baseline"
     BASELINE_CSV_FILE = "baseline.csv"
     BASELINE_PARQUET_FILE = "baseline.parquet"
+    DAX_STUDIO_QUERY_FOLDER_NAME = "DAX Studio"
+    POWER_BI_PERF_ANALYZER_QUERY_FOLDER_NAME = "PBI Performance Analyzer"
 
     class QueryType(Enum):
         DAX_STUDIO = "DAXSTUDIO"
         PERFORMANCE_ANALYZER = "PERFORMANCEANALYZER"
 
-    def __init__(self, project_folder, connection_string, pbi_report_folder, query_type = QueryType.PERFORMANCE_ANALYZER):
+    def __init__(self, project_folder, connection_string, pbi_report_folder):
         """
         Initialize the regression tester with project and environment details.
 
@@ -49,15 +51,17 @@ class PowerBIRegressionTester:
         self.baseline_csv_file = os.path.join(self.baseline_folder, self.BASELINE_CSV_FILE)
         self.baseline_parquet_file = os.path.join(self.baseline_folder, self.BASELINE_PARQUET_FILE)
         self.instance_folder_base = os.path.join(self.project_folder, "instance")
-        self.query_type = query_type
+        # self.query_type = query_type
 
-        self.query_subfolder = None
-        if self.query_type == self.QueryType.DAX_STUDIO:
-            self.query_subfolder = "DAX Studio"
-        elif self.query_type == self.QueryType.PERFORMANCE_ANALYZER:
-            self.query_subfolder = "PBI Performance Analyzer"
+        # self.query_subfolder = None
+        # if self.query_type == self.QueryType.DAX_STUDIO:
+        #     self.query_subfolder = "DAX Studio"
+        # elif self.query_type == self.QueryType.PERFORMANCE_ANALYZER:
+        #     self.query_subfolder = "PBI Performance Analyzer"
 
-        self.query_folder = os.path.join(self.project_folder, self.QUERIES_BASE_FOLDER, self.query_subfolder)
+        # self.query_folder = os.path.join(self.project_folder, self.QUERIES_BASE_FOLDER, self.query_subfolder)
+        self.dax_studio_query_folder = os.path.join(self.project_folder, self.QUERIES_BASE_FOLDER, self.DAX_STUDIO_QUERY_FOLDER_NAME)
+        self.power_bi_perf_analyzer_query_folder = os.path.join(self.project_folder, self.QUERIES_BASE_FOLDER, self.POWER_BI_PERF_ANALYZER_QUERY_FOLDER_NAME)
 
 
         adomd_path = r'C:\Program Files\Microsoft.NET\ADOMD.NET\160'
@@ -71,7 +75,7 @@ class PowerBIRegressionTester:
             path.append(adomd_path)
 
     @classmethod
-    def for_compare_only(cls, project_folder, query_type = QueryType.PERFORMANCE_ANALYZER):
+    def for_compare_only(cls, project_folder):
         """
         Alternate constructor for compare-only usage (no connection string or ADOMD.NET dependency).
 
@@ -94,15 +98,17 @@ class PowerBIRegressionTester:
         obj.instance_folder_base = os.path.join(obj.project_folder, "instance")
         obj.connection_string = None  # Not needed for compare-only
 
-        obj.query_type = query_type
+        # obj.query_type = query_type
 
-        obj.query_subfolder = None
-        if obj.query_type == obj.QueryType.DAX_STUDIO:
-            obj.query_subfolder = "DAX Studio"
-        elif obj.query_type == obj.QueryType.PERFORMANCE_ANALYZER:
-            obj.query_subfolder = "PBI Performance Analyzer"
+        # obj.query_subfolder = None
+        # if obj.query_type == obj.QueryType.DAX_STUDIO:
+        #     obj.query_subfolder = "DAX Studio"
+        # elif obj.query_type == obj.QueryType.PERFORMANCE_ANALYZER:
+        #     obj.query_subfolder = "PBI Performance Analyzer"
 
-        obj.query_folder = os.path.join(obj.project_folder, obj.QUERIES_BASE_FOLDER, obj.query_subfolder)
+        # obj.query_folder = os.path.join(obj.project_folder, obj.QUERIES_BASE_FOLDER, obj.query_subfolder)
+        obj.dax_studio_query_folder = os.path.join(obj.project_folder, obj.QUERIES_BASE_FOLDER, obj.DAX_STUDIO_QUERY_FOLDER_NAME)
+        obj.power_bi_perf_analyzer_query_folder = os.path.join(obj.project_folder, obj.QUERIES_BASE_FOLDER, obj.POWER_BI_PERF_ANALYZER_QUERY_FOLDER_NAME)
 
         return obj
 
@@ -204,46 +210,69 @@ class PowerBIRegressionTester:
                         print(f"Error reading {file_path}: {e}")
         return None
 
-    def get_page_display_name(self, visual_json_path):
-        """
-        Go up three directories from a visual.json file to find the corresponding page.json,
-        and extract the displayName.
+    # def get_page_display_name(self, visual_json_path):
+    #     """
+    #     Go up three directories from a visual.json file to find the corresponding page.json,
+    #     and extract the displayName.
 
-        Args:
-            visual_json_path (str): Path to the visual.json file.
+    #     Args:
+    #         visual_json_path (str): Path to the visual.json file.
 
-        Returns:
-            str or None: The displayName from page.json, or None if not found.
-        """
-        page_dir = os.path.dirname(os.path.dirname(os.path.dirname(visual_json_path)))
-        page_json_path = os.path.join(page_dir, "page.json")
-        if os.path.isfile(page_json_path):
-            with open(page_json_path, "r", encoding="utf-8") as f:
-                page_data = json.load(f)
-                return page_data.get("displayName")
-        return None
+    #     Returns:
+    #         str or None: The displayName from page.json, or None if not found.
+    #     """
+    #     page_dir = os.path.dirname(os.path.dirname(os.path.dirname(visual_json_path)))
+    #     page_json_path = os.path.join(page_dir, "page.json")
+    #     if os.path.isfile(page_json_path):
+    #         with open(page_json_path, "r", encoding="utf-8") as f:
+    #             page_data = json.load(f)
+    #             return page_data.get("displayName")
+    #     return None
 
-    def add_page_names_to_df(self, df, report_folder):
-        """
-        Add a 'pageName' column to the DataFrame by mapping each visualId to its page display name.
+    def build_visualid_to_pagename_map(self, report_folder):
+        visualid_to_pagename = {}
+        for root, dirs, files in os.walk(report_folder):
+            if "visual.json" in files:
+                visual_json_path = os.path.join(root, "visual.json")
+                try:
+                    with open(visual_json_path, "r", encoding="utf-8") as f:
+                        visual_data = json.load(f)
+                    visual_id = visual_data.get("name")
+                    # Go up three directories to find page.json
+                    page_dir = os.path.dirname(os.path.dirname(os.path.dirname(visual_json_path)))
+                    page_json_path = os.path.join(page_dir, "page.json")
+                    page_name = None
+                    if os.path.isfile(page_json_path):
+                        with open(page_json_path, "r", encoding="utf-8") as pf:
+                            page_data = json.load(pf)
+                            page_name = page_data.get("displayName")
+                    if visual_id:
+                        visualid_to_pagename[visual_id] = page_name
+                except Exception as e:
+                    print(f"Error reading {visual_json_path}: {e}")
+        return visualid_to_pagename
 
-        Args:
-            df (pd.DataFrame): DataFrame with a 'visualId' column.
-            report_folder (str): Folder to search for visual.json and page.json files.
+    # def add_page_names_to_df(self, df, report_folder):
+    #     """
+    #     Add a 'pageName' column to the DataFrame by mapping each visualId to its page display name.
 
-        Returns:
-            pd.DataFrame: DataFrame with an added 'pageName' column.
-        """
-        page_names = []
-        for visual_id in df['visualId']:
-            visual_json_path = self.find_visual_json_by_id(report_folder, visual_id)
-            if visual_json_path:
-                page_name = self.get_page_display_name(visual_json_path)
-            else:
-                page_name = None
-            page_names.append(page_name)
-        df['pageName'] = page_names
-        return df
+    #     Args:
+    #         df (pd.DataFrame): DataFrame with a 'visualId' column.
+    #         report_folder (str): Folder to search for visual.json and page.json files.
+
+    #     Returns:
+    #         pd.DataFrame: DataFrame with an added 'pageName' column.
+    #     """
+    #     page_names = []
+    #     for visual_id in df['visualId']:
+    #         visual_json_path = self.find_visual_json_by_id(report_folder, visual_id)
+    #         if visual_json_path:
+    #             page_name = self.get_page_display_name(visual_json_path)
+    #         else:
+    #             page_name = None
+    #         page_names.append(page_name)
+    #     df['pageName'] = page_names
+    #     return df
 
     def load_events(self):
         """
@@ -253,7 +282,11 @@ class PowerBIRegressionTester:
             pd.DataFrame: Combined DataFrame of all events.
         """
         all_dfs = []
-        for json_path in glob.glob(os.path.join(self.query_folder, r"*.json")):
+
+        if self.pbi_report_folder:
+            visualid_to_pagename = self.build_visualid_to_pagename_map(self.pbi_report_folder)
+
+        for json_path in glob.glob(os.path.join(self.power_bi_perf_analyzer_query_folder, r"*.json")):
             with open(json_path, "r", encoding="utf-8-sig") as f:
                 data = json.load(f)
             events = data.get("events", [])
@@ -263,9 +296,11 @@ class PowerBIRegressionTester:
                 id_map = {event['id']: event for event in events if 'id' in event}
                 df['VisualID'] = df['id'].apply(lambda x: self.find_visual_id(id_map, x))
                 if self.pbi_report_folder:
-                    df = self.add_page_names_to_df(df, self.pbi_report_folder)
+                    df['PageName'] = df['VisualID'].map(visualid_to_pagename)
                 else:
                     df['PageName'] = ""
+
+                df['ResultSets'] = 0
 
                 all_dfs.append(df)
         if all_dfs:
@@ -273,13 +308,20 @@ class PowerBIRegressionTester:
             filtered_df = concat_df[concat_df['name'] == 'Execute DAX Query'].copy()
             filtered_df.drop_duplicates(inplace=True)
 
-            filtered_df = filtered_df.rename(columns={
-                "id": "ID", 
-                "QueryText": "Query"
-            })
-            filtered_df = filtered_df.drop(['name', 'component', 'start',
-                                            'end', 'sourceLabel', 'end', 'status', 'visualTitle', 'visualType', 
-                                            'visualId', 'initialLoad', 'parentId'], axis=1)
+            # filtered_df = filtered_df.rename(columns={
+            #     "id": "ID", 
+            #     "QueryText": "Query"
+            # })
+            # filtered_df = filtered_df.drop([
+            #     'name', 'component', 'start', 'end', 'sourceLabel', 'status',
+            #     'visualTitle', 'visualType', 'visualId', 'initialLoad', 'parentId'
+            # ], axis=1)
+            # desired_order = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']
+            # filtered_df = filtered_df[desired_order]
+
+            filtered_df = filtered_df.rename(columns={"id": "ID", "QueryText": "Query"})
+            desired_order = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']
+            filtered_df = filtered_df[desired_order]
 
             return filtered_df
         return pd.DataFrame()
@@ -292,7 +334,7 @@ class PowerBIRegressionTester:
             pd.DataFrame: Combined DataFrame of all events.
         """
         all_dfs = []
-        for json_path in glob.glob(os.path.join(self.query_folder, r"*.json")):
+        for json_path in glob.glob(os.path.join(self.dax_studio_query_folder, r"*.json")):
             with open(json_path, "r", encoding="utf-8-sig") as f:
                 data = json.load(f)
             events = data
@@ -312,14 +354,18 @@ class PowerBIRegressionTester:
             filtered_df = concat_df[concat_df['QueryType'] == 'DAX'].copy()
             filtered_df.drop_duplicates(inplace=True)
 
-            filtered_df = filtered_df.rename(columns={
-                "RequestID": "ID"
-                #"old_name2": "new_name2"
-            })
-            filtered_df = filtered_df.drop(['Duration', 'StartTime', 'EndTime',
-                                            'Username', 'DatabaseName', 'QueryType',
-                                            'AggregationMatchCount', 'AggregationMissCount',
-                                            'RequestProperties', 'RequestParameters', 'ActivityID'], axis=1)
+            # Rename columns and select only the relevant ones for clarity
+            # filtered_df = filtered_df.rename(columns={"RequestID": "ID"})
+            # filtered_df = filtered_df.drop(columns=[
+            #     'Duration', 'StartTime', 'EndTime', 'Username', 'DatabaseName', 'QueryType',
+            #     'AggregationMatchCount', 'AggregationMissCount', 'RequestProperties',
+            #     'RequestParameters', 'ActivityID'
+            # ])
+            # filtered_df = filtered_df[['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']]
+
+            filtered_df = filtered_df.rename(columns={"RequestID": "ID"})
+            desired_columns = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']
+            filtered_df = filtered_df[desired_columns]
 
             return filtered_df
         return pd.DataFrame()
@@ -413,33 +459,56 @@ class PowerBIRegressionTester:
         # Columns from a PA PBI file
         # ['name', 'component', 'start', 'id', 'sourceLabel', 'end', 'status', 'visualTitle', 'visualId', 'visualType', 'initialLoad', 'parentId', 'QueryText', 'RowCount']
 
-        if self.query_type == self.QueryType.DAX_STUDIO:
-            final_df = self.load_events_DAX_Studio()
-        elif self.query_type == self.QueryType.PERFORMANCE_ANALYZER:
-            final_df = self.load_events()
-        else:
-            raise ValueError("Unsupported query type. Use DAX_STUDIO or PERFORMANCE_ANALYZER.")
+        # if self.query_type == self.QueryType.DAX_STUDIO:
+        #     final_df = self.load_events_DAX_Studio()
+        # elif self.query_type == self.QueryType.PERFORMANCE_ANALYZER:
+        #     final_df = self.load_events()
+        # else:
+        #     raise ValueError("Unsupported query type. Use DAX_STUDIO or PERFORMANCE_ANALYZER.")
+
+        # Check if the Power BI Performance Analyzer query folder has any .json files
+        has_perf_analyzer_files = (
+            os.path.isdir(self.power_bi_perf_analyzer_query_folder) and
+            any(fname.endswith('.json') for fname in os.listdir(self.power_bi_perf_analyzer_query_folder))
+        )
+
+        # Check if the DAX Studio query folder has any .json files
+        has_dax_studio_files = (
+            os.path.isdir(self.dax_studio_query_folder) and
+            any(fname.endswith('.json') for fname in os.listdir(self.dax_studio_query_folder))
+        )
+
+        power_bi_perf_analyzer = None
+        dax_studio_df = None
+
+        if has_perf_analyzer_files:
+            power_bi_perf_analyzer = self.load_events()
         
-        final_df['Query'] = final_df['Query'].apply(normalize_line_endings)
-                                                    
+        if has_dax_studio_files:
+            dax_studio_df = self.load_events_DAX_Studio()
+        # else:
+        #     final_df = pd.DataFrame()
+
+        combined_df = pd.concat([dax_studio_df, power_bi_perf_analyzer], ignore_index=True)
+
+        if not combined_df.empty and 'Query' in combined_df.columns:
+            combined_df['Query'] = combined_df['Query'].apply(normalize_line_endings)
         # final_df['QueryHash'] = final_df['Query'].apply(lambda x: hashlib.sha256(str(x).encode('utf-8')).hexdigest())
 
         # pd.set_option('display.max_columns', None)
         # pd.set_option('display.max_rows', 20)
-        filtered_df = final_df
 
-
-        filtered_df = self.execute_queries(filtered_df)
-        all_hashes = filtered_df['CombinedQueryHash'].dropna().astype(str).tolist()
+        combined_df = self.execute_queries(combined_df)
+        all_hashes = combined_df['CombinedQueryHash'].dropna().astype(str).tolist()
         combined = '|'.join(all_hashes)
         final_overall_hash = hashlib.sha256(combined.encode('utf-8')).hexdigest()
-        filtered_df['FinalOverallHash'] = final_overall_hash
+        combined_df['FinalOverallHash'] = final_overall_hash
         # filtered_df = self.add_page_names_to_df(filtered_df, self.pbi_report_folder)
         # filtered_df = filtered_df[
         #     ['id', 'parentId', 'visualId', 'QueryText', 'RowCount', 'ResultSets',
         #      'CombinedQueryHash', 'final_overall_hash', 'pageName']
         # ]
-        return filtered_df
+        return combined_df
 
 
     # def prepare_df_DAX_Studio(self):
