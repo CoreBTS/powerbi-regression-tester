@@ -1,13 +1,88 @@
 
 import tkinter as tk
-from tkinter import ttk, messagebox
-from tkinter import filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, simpledialog
 from PowerBIRegressionTester import PowerBIRegressionTester
 from tabulate import tabulate
 import os
 import json
 
-CONFIG_FILE = os.path.expanduser("~/.pbi_regression_tester_gui.json")
+CONFIG_FILE = os.path.expanduser("~/.pbi_regression_tester_gui3.json")
+
+def save_all_configs():
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(configs, f)
+
+def load_all_configs():
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def update_config_dropdown():
+    config_names = list(configs.keys())
+    config_dropdown['values'] = config_names
+    if config_names:
+        config_dropdown.current(0)
+    else:
+        config_dropdown.set("")
+
+def load_config_to_fields(name):
+    config = configs.get(name, {})
+    project_folder_var.set(config.get("project_folder", ""))
+    connection_string_var.set(config.get("connection_string", ""))
+    pbi_report_folder_var.set(config.get("pbi_report_folder", ""))
+    instance_name_var.set(config.get("instance_name", ""))
+
+def on_config_select(event=None):
+    name = config_dropdown.get()
+    if name in configs:
+        load_config_to_fields(name)
+
+def save_current_config():
+    name = config_dropdown.get().strip()
+    if not name:
+        name = simpledialog.askstring("Config Name", "Enter a name for this configuration:")
+        if not name:
+            return
+        config_dropdown.set(name)
+    configs[name] = {
+        "project_folder": project_folder_var.get(),
+        "connection_string": connection_string_var.get(),
+        "pbi_report_folder": pbi_report_folder_var.get(),
+        "instance_name": instance_name_var.get()
+    }
+    save_all_configs()
+    update_config_dropdown()
+    config_dropdown.set(name)
+    messagebox.showinfo("Saved", f"Configuration '{name}' saved.")
+
+def delete_current_config():
+    name = config_dropdown.get()
+    if name in configs:
+        if messagebox.askyesno("Delete", f"Delete configuration '{name}'?"):
+            del configs[name]
+            save_all_configs()
+            update_config_dropdown()
+            
+            # If there are configs left, load the selected one; else, clear fields
+            current = config_dropdown.get()
+            if current in configs:
+                load_config_to_fields(current)
+            else:
+                project_folder_var.set("")
+                connection_string_var.set("")
+                pbi_report_folder_var.set("")
+                instance_name_var.set("")
+            messagebox.showinfo("Deleted", f"Configuration '{name}' deleted.")
+
+def on_closing():
+    save_all_configs()
+    root.destroy()
+
+def browse_folder(var):
+    folder = filedialog.askdirectory()
+    if folder:
+        var.set(folder)
 
 # Save config on exit
 def on_closing():
@@ -61,6 +136,24 @@ def run_instance():
     df = tester.run_instance(instance_name)
     show_result(df)
 
+def run_compare():
+    project_folder = project_folder_var.get()
+    instance_name = instance_name_var.get().strip()
+    if not instance_name:
+        instance_name = simpledialog.askstring("Instance Name", "Enter an instance name to compare:")
+        if not instance_name:
+            return
+        instance_name_var.set(instance_name)
+    tester = PowerBIRegressionTester.for_compare_only(project_folder)
+    if tester.instance_exists(instance_name):
+        df = tester.compare(instance_name)
+        if df is not None:
+            show_result(df)
+        else:
+            messagebox.showinfo("Compare", "No differences found or comparison failed.")
+    else:
+        messagebox.showerror("Error", f"The instance '{instance_name}' does not exist.")
+        
 def browse_folder(var):
     folder = filedialog.askdirectory()
     if folder:
@@ -154,76 +247,25 @@ def show_result(df):
 
         tree.bind("<Double-1>", on_double_click)
 
-def show_result_OLD(df):
-    if df is not None and not df.empty:
-        # Create a new window
-        result_window = tk.Toplevel(root)
-        result_window.title("Result Table")
-
-        # Scrollbars
-        frame = ttk.Frame(result_window)
-        frame.pack(fill='both', expand=True)
-        tree_scroll_y = ttk.Scrollbar(frame, orient="vertical")
-        tree_scroll_y.pack(side='right', fill='y')
-        tree_scroll_x = ttk.Scrollbar(frame, orient="horizontal")
-        tree_scroll_x.pack(side='bottom', fill='x')
-
-        # Treeview setup
-        tree = ttk.Treeview(frame, columns=list(df.columns), show='headings',
-                            yscrollcommand=tree_scroll_y.set, xscrollcommand=tree_scroll_x.set)
-        tree.pack(fill='both', expand=True)
-        tree_scroll_y.config(command=tree.yview)
-        tree_scroll_x.config(command=tree.xview)
-
-        # Set up columns and headings
-        for col in df.columns:
-            tree.heading(col, text=col)
-            # Set width, make long text columns shorter
-            width = 200 if col.lower() == "query" else 100
-            tree.column(col, width=width, anchor='w')
-
-        # Insert data (truncate long text columns)
-        for _, row in df.iterrows():
-            values = []
-            for col in df.columns:
-                val = row[col]
-                if col.lower() == "query" and isinstance(val, str):
-                    display_val = val[:20] + "..." if len(val) > 20 else val
-                else:
-                    display_val = val
-                values.append(display_val)
-            tree.insert('', 'end', values=values)
-
-        # Double-click to show/copy full text
-        def on_double_click(event):
-            item = tree.selection()
-            if item:
-                row = tree.item(item, "values")
-                col = tree.identify_column(event.x)
-                col_index = int(col.replace("#", "")) - 1
-                col_name = df.columns[col_index]
-                full_text = df.iloc[tree.index(item[0]), col_index]
-                # Show full text in a popup with copy option
-                popup = tk.Toplevel(result_window)
-                popup.title(f"Full text: {col_name}")
-                text_box = tk.Text(popup, wrap='word', width=80, height=10)
-                text_box.insert('1.0', str(full_text))
-                text_box.pack(expand=True, fill='both')
-                text_box.config(state='normal')
-                def copy_to_clipboard():
-                    popup.clipboard_clear()
-                    popup.clipboard_append(str(full_text))
-                copy_btn = tk.Button(popup, text="Copy", command=copy_to_clipboard)
-                copy_btn.pack()
-        tree.bind("<Double-1>", on_double_click)
-
 root = tk.Tk()
 root.title("Power BI Regression Testing")
+
+# Load configs
+configs = load_all_configs()
 
 project_folder_var = tk.StringVar()
 connection_string_var = tk.StringVar()
 pbi_report_folder_var = tk.StringVar()
 instance_name_var = tk.StringVar()
+
+# Config dropdown
+tk.Label(root, text="Configuration:").grid(row=0, column=0, sticky='e')
+config_dropdown = ttk.Combobox(root, width=40, state="normal")
+config_dropdown.grid(row=0, column=1, padx=5, pady=2)
+config_dropdown.bind("<<ComboboxSelected>>", on_config_select)
+
+tk.Button(root, text="Save", command=save_current_config).grid(row=0, column=2, padx=2)
+tk.Button(root, text="Delete", command=delete_current_config).grid(row=0, column=3, padx=2)
 
 fields = [
     ("Project Folder", project_folder_var),
@@ -232,17 +274,20 @@ fields = [
     ("Instance Name (for instance only)", instance_name_var)
 ]
 
-for i, (label, var) in enumerate(fields):
+for i, (label, var) in enumerate(fields, start=1):  # <-- start=1
     tk.Label(root, text=label).grid(row=i, column=0, sticky='e')
     entry = tk.Entry(root, textvariable=var, width=60)
     entry.grid(row=i, column=1, padx=5, pady=2)
     if "Folder" in label:
         tk.Button(root, text="Browse", command=lambda v=var: browse_folder(v)).grid(row=i, column=2)
 
-tk.Button(root, text="Create Baseline", command=run_baseline, bg="lightblue").grid(row=len(fields), column=0, pady=10)
-tk.Button(root, text="Create Instance", command=run_instance, bg="lightgreen").grid(row=len(fields), column=1, pady=10)
+tk.Button(root, text="Create Baseline", command=run_baseline, bg="lightblue").grid(row=len(fields)+1, column=0, pady=10)
+tk.Button(root, text="Create Instance", command=run_instance, bg="lightgreen").grid(row=len(fields)+1, column=1, pady=10)
+tk.Button(root, text="Compare", command=run_compare, bg="orange").grid(row=len(fields)+1, column=2, pady=10)
 
-load_config()
+update_config_dropdown()
+if config_dropdown['values']:
+    load_config_to_fields(config_dropdown.get())
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
 root.mainloop()
