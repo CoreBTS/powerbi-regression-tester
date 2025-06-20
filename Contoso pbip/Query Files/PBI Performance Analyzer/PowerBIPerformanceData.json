@@ -1,0 +1,1697 @@
+﻿{
+    "version": "1.1.0",
+    "events": [
+        {
+            "name": "User Action",
+            "component": "Report Canvas",
+            "start": "2025-06-15T17:18:52.198Z",
+            "id": "56e2c02e87d5b137407c",
+            "metrics": {
+                "sourceLabel": "UserAction_StartedMonitoring"
+            }
+        },
+        {
+            "name": "User Action",
+            "component": "Report Canvas",
+            "start": "2025-06-15T17:19:05.883Z",
+            "id": "170394eb041eac9999de",
+            "metrics": {
+                "sourceLabel": "UserAction_ChangeFilter"
+            }
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:19:05.942Z",
+            "end": "2025-06-15T17:19:08.073Z",
+            "id": "3c5da33d296c579b6b37-348167d08d4a44017eb5",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Table",
+                "visualId": "3c5da33d296c579b6b37",
+                "visualType": "tableEx",
+                "initialLoad": false
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:19:05.943Z",
+            "end": "2025-06-15T17:19:05.945Z",
+            "id": "965bf2e3-2233-4ea7-8941-49492aaff788",
+            "parentId": "3c5da33d296c579b6b37-348167d08d4a44017eb5"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:19:05.945Z",
+            "end": "2025-06-15T17:19:08.018Z",
+            "id": "a1f1369a-be54-48f6-a114-32ddeb82ae1a",
+            "parentId": "3c5da33d296c579b6b37-348167d08d4a44017eb5"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:19:08.017Z",
+            "end": "2025-06-15T17:19:08.073Z",
+            "id": "f2dec218-46ab-406a-9234-d78f9f194eef",
+            "parentId": "3c5da33d296c579b6b37-348167d08d4a44017eb5"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:19:08.027Z",
+            "end": "2025-06-15T17:19:08.030Z",
+            "id": "c509bef6-787d-4721-88af-0fe324bf7719",
+            "parentId": "f2dec218-46ab-406a-9234-d78f9f194eef"
+        },
+        {
+            "name": "Visual Update Async",
+            "start": "2025-06-15T17:19:08.030Z",
+            "end": "2025-06-15T17:19:08.073Z",
+            "id": "37d696cd-0d9f-4477-b7da-819eb05e9316",
+            "parentId": "f2dec218-46ab-406a-9234-d78f9f194eef"
+        },
+        {
+            "name": "Visual Update",
+            "start": "2025-06-15T17:19:08.031Z",
+            "end": "2025-06-15T17:19:08.031Z",
+            "id": "9db655cd-7202-4696-9610-1a7b2505f3fc",
+            "parentId": "f2dec218-46ab-406a-9234-d78f9f194eef"
+        },
+        {
+            "name": "Execute Semantic Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:06.660Z",
+            "end": "2025-06-15T17:19:07.938Z",
+            "id": "99620aff-6a75-41c3-a071-c653c0cec71f",
+            "parentId": "a1f1369a-be54-48f6-a114-32ddeb82ae1a"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:19:05.947Z",
+            "end": "2025-06-15T17:19:05.948Z",
+            "id": "cd84f37c-2bc1-4c7a-b16e-34c3f774fb22",
+            "parentId": "a1f1369a-be54-48f6-a114-32ddeb82ae1a"
+        },
+        {
+            "name": "Query Pending",
+            "start": "2025-06-15T17:19:05.995Z",
+            "end": "2025-06-15T17:19:05.996Z",
+            "id": "35b52bfe-39c4-4700-b1de-1cb7ed14c410",
+            "parentId": "a1f1369a-be54-48f6-a114-32ddeb82ae1a"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:19:08.013Z",
+            "end": "2025-06-15T17:19:08.016Z",
+            "id": "89643cc8-9887-4ddc-ba7a-80e123b3e906",
+            "parentId": "a1f1369a-be54-48f6-a114-32ddeb82ae1a"
+        },
+        {
+            "name": "Execute DAX Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:07.782Z",
+            "end": "2025-06-15T17:19:07.841Z",
+            "id": "df1e828d-9b75-43d7-b66f-81320f760c4f",
+            "parentId": "99620aff-6a75-41c3-a071-c653c0cec71f",
+            "metrics": {
+                "QueryText": "EVALUATE\r\n\tROW(\r\n\t\t\"SumLine_Number\", CALCULATE(SUM('orderrows'[Line Number]))\r\n\t)",
+                "RowCount": 1
+            }
+        },
+        {
+            "name": "Execute Query",
+            "component": "AS",
+            "start": "2025-06-15T17:19:07.800Z",
+            "end": "2025-06-15T17:19:07.833Z",
+            "id": "32888F04-B48C-4A01-AEED-A3A520638337",
+            "parentId": "df1e828d-9b75-43d7-b66f-81320f760c4f"
+        },
+        {
+            "name": "Serialize Rowset",
+            "component": "AS",
+            "start": "2025-06-15T17:19:07.833Z",
+            "end": "2025-06-15T17:19:07.833Z",
+            "id": "8D6C8275-09D3-49D4-82C6-42D366400588",
+            "parentId": "32888F04-B48C-4A01-AEED-A3A520638337"
+        },
+        {
+            "name": "User Action",
+            "component": "Report Canvas",
+            "start": "2025-06-15T17:19:21.487Z",
+            "id": "fd9a275dc459bb455e26",
+            "metrics": {
+                "sourceLabel": "UserAction_ChangeFilter"
+            }
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:19:21.512Z",
+            "end": "2025-06-15T17:19:22.053Z",
+            "id": "3c5da33d296c579b6b37-12268b12109ea2f449e6",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Table",
+                "visualId": "3c5da33d296c579b6b37",
+                "visualType": "tableEx",
+                "initialLoad": false
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:19:21.513Z",
+            "end": "2025-06-15T17:19:21.514Z",
+            "id": "412a3671-fa0e-4cc1-9510-178847a18623",
+            "parentId": "3c5da33d296c579b6b37-12268b12109ea2f449e6"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:19:21.514Z",
+            "end": "2025-06-15T17:19:22.003Z",
+            "id": "784e2727-1780-4b3c-b827-6e5b4d3b4b50",
+            "parentId": "3c5da33d296c579b6b37-12268b12109ea2f449e6"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:19:22.003Z",
+            "end": "2025-06-15T17:19:22.053Z",
+            "id": "9a52e525-73e5-4fe4-a640-8bf4707946c3",
+            "parentId": "3c5da33d296c579b6b37-12268b12109ea2f449e6"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:19:22.018Z",
+            "end": "2025-06-15T17:19:22.019Z",
+            "id": "b6ee7f6e-cc27-422d-b0ac-9c43034783f2",
+            "parentId": "9a52e525-73e5-4fe4-a640-8bf4707946c3"
+        },
+        {
+            "name": "Visual Update Async",
+            "start": "2025-06-15T17:19:22.019Z",
+            "end": "2025-06-15T17:19:22.053Z",
+            "id": "ff004554-9ee9-4caf-a383-5815df2b6ac9",
+            "parentId": "9a52e525-73e5-4fe4-a640-8bf4707946c3"
+        },
+        {
+            "name": "Visual Update",
+            "start": "2025-06-15T17:19:22.019Z",
+            "end": "2025-06-15T17:19:22.019Z",
+            "id": "39412d60-95cf-4eff-93a9-eaa370f84161",
+            "parentId": "9a52e525-73e5-4fe4-a640-8bf4707946c3"
+        },
+        {
+            "name": "Execute Semantic Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:21.551Z",
+            "end": "2025-06-15T17:19:21.988Z",
+            "id": "9dd20f82-771f-4760-84c7-523d499b43cf",
+            "parentId": "784e2727-1780-4b3c-b827-6e5b4d3b4b50"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:19:21.515Z",
+            "end": "2025-06-15T17:19:21.516Z",
+            "id": "c6be00af-7d71-4162-acc1-787aafbf021c",
+            "parentId": "784e2727-1780-4b3c-b827-6e5b4d3b4b50"
+        },
+        {
+            "name": "Query Pending",
+            "start": "2025-06-15T17:19:21.552Z",
+            "end": "2025-06-15T17:19:21.552Z",
+            "id": "9bceb1ea-1c46-494e-91c0-b8229bdaabe2",
+            "parentId": "784e2727-1780-4b3c-b827-6e5b4d3b4b50"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:19:22.000Z",
+            "end": "2025-06-15T17:19:22.003Z",
+            "id": "d7b9f817-38eb-4b53-8336-67b62054754a",
+            "parentId": "784e2727-1780-4b3c-b827-6e5b4d3b4b50"
+        },
+        {
+            "name": "Execute DAX Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:21.940Z",
+            "end": "2025-06-15T17:19:21.972Z",
+            "id": "78b51d5c-3890-42a3-a276-47408cc093c1",
+            "parentId": "9dd20f82-771f-4760-84c7-523d499b43cf",
+            "metrics": {
+                "QueryText": "DEFINE\r\n\tVAR __DS0Core = \r\n\t\tSUMMARIZECOLUMNS(\r\n\t\t\tROLLUPADDISSUBTOTAL('product'[Brand], \"IsGrandTotalRowTotal\"),\r\n\t\t\t\"SumLine_Number\", CALCULATE(SUM('orderrows'[Line Number]))\r\n\t\t)\r\n\r\n\tVAR __DS0PrimaryWindowed = \r\n\t\tTOPN(502, __DS0Core, [IsGrandTotalRowTotal], 0, 'product'[Brand], 1)\r\n\r\nEVALUATE\r\n\t__DS0PrimaryWindowed\r\n\r\nORDER BY\r\n\t[IsGrandTotalRowTotal] DESC, 'product'[Brand]",
+                "RowCount": 12
+            }
+        },
+        {
+            "name": "Execute Query",
+            "component": "AS",
+            "start": "2025-06-15T17:19:21.953Z",
+            "end": "2025-06-15T17:19:21.973Z",
+            "id": "C4A3A56B-A521-46CB-8D79-A424F5BBD46C",
+            "parentId": "78b51d5c-3890-42a3-a276-47408cc093c1"
+        },
+        {
+            "name": "Serialize Rowset",
+            "component": "AS",
+            "start": "2025-06-15T17:19:21.973Z",
+            "end": "2025-06-15T17:19:21.973Z",
+            "id": "9E2B979C-3429-46B8-BB6C-698E0984DE12",
+            "parentId": "C4A3A56B-A521-46CB-8D79-A424F5BBD46C"
+        },
+        {
+            "name": "User Action",
+            "component": "Report Canvas",
+            "start": "2025-06-15T17:19:22.449Z",
+            "id": "347ae74c6eacc3dd1892",
+            "metrics": {
+                "sourceLabel": "UserAction_ChangeFilter"
+            }
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:19:22.474Z",
+            "end": "2025-06-15T17:19:22.610Z",
+            "id": "3c5da33d296c579b6b37-e91458056b86973b557f",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Table",
+                "visualId": "3c5da33d296c579b6b37",
+                "visualType": "tableEx",
+                "initialLoad": false
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:19:22.474Z",
+            "end": "2025-06-15T17:19:22.475Z",
+            "id": "8ddb648d-5561-4297-b095-410746d37e89",
+            "parentId": "3c5da33d296c579b6b37-e91458056b86973b557f"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:19:22.475Z",
+            "end": "2025-06-15T17:19:22.562Z",
+            "id": "e91792a9-3797-4f08-aad5-cdc115b28a6a",
+            "parentId": "3c5da33d296c579b6b37-e91458056b86973b557f"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:19:22.562Z",
+            "end": "2025-06-15T17:19:22.610Z",
+            "id": "9124aeee-00f4-4b18-a1a7-61cce78a32cb",
+            "parentId": "3c5da33d296c579b6b37-e91458056b86973b557f"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:19:22.573Z",
+            "end": "2025-06-15T17:19:22.574Z",
+            "id": "40f87e92-9f35-45db-8a2f-1284cd972707",
+            "parentId": "9124aeee-00f4-4b18-a1a7-61cce78a32cb"
+        },
+        {
+            "name": "Visual Update Async",
+            "start": "2025-06-15T17:19:22.574Z",
+            "end": "2025-06-15T17:19:22.610Z",
+            "id": "d40eb976-86e4-483c-a202-212315666dd4",
+            "parentId": "9124aeee-00f4-4b18-a1a7-61cce78a32cb"
+        },
+        {
+            "name": "Visual Update",
+            "start": "2025-06-15T17:19:22.574Z",
+            "end": "2025-06-15T17:19:22.574Z",
+            "id": "da54c1a8-3d94-4fe3-a1e7-ead46508df42",
+            "parentId": "9124aeee-00f4-4b18-a1a7-61cce78a32cb"
+        },
+        {
+            "name": "Execute Semantic Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:22.510Z",
+            "end": "2025-06-15T17:19:22.550Z",
+            "id": "4cf83bef-c932-4b15-8f9b-5fe20ef51909",
+            "parentId": "e91792a9-3797-4f08-aad5-cdc115b28a6a"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:19:22.476Z",
+            "end": "2025-06-15T17:19:22.478Z",
+            "id": "4e8910a0-6afb-4627-a7c7-f537f4367232",
+            "parentId": "e91792a9-3797-4f08-aad5-cdc115b28a6a"
+        },
+        {
+            "name": "Query Pending",
+            "start": "2025-06-15T17:19:22.512Z",
+            "end": "2025-06-15T17:19:22.513Z",
+            "id": "f24477f3-fde6-40bb-b5f6-4816d873ae1d",
+            "parentId": "e91792a9-3797-4f08-aad5-cdc115b28a6a"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:19:22.559Z",
+            "end": "2025-06-15T17:19:22.562Z",
+            "id": "efc0d6ad-0e54-4156-a647-ff57cdd3344f",
+            "parentId": "e91792a9-3797-4f08-aad5-cdc115b28a6a"
+        },
+        {
+            "name": "Execute DAX Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:22.510Z",
+            "end": "2025-06-15T17:19:22.547Z",
+            "id": "66a19e4c-6d82-4a1b-9e6c-b59004cffd30",
+            "parentId": "4cf83bef-c932-4b15-8f9b-5fe20ef51909",
+            "metrics": {
+                "QueryText": "DEFINE\r\n\tVAR __DS0Core = \r\n\t\tSUMMARIZECOLUMNS(\r\n\t\t\tROLLUPADDISSUBTOTAL(ROLLUPGROUP('product'[Brand], 'product'[Color]), \"IsGrandTotalRowTotal\"),\r\n\t\t\t\"SumLine_Number\", CALCULATE(SUM('orderrows'[Line Number]))\r\n\t\t)\r\n\r\n\tVAR __DS0PrimaryWindowed = \r\n\t\tTOPN(502, __DS0Core, [IsGrandTotalRowTotal], 0, 'product'[Brand], 1, 'product'[Color], 1)\r\n\r\nEVALUATE\r\n\t__DS0PrimaryWindowed\r\n\r\nORDER BY\r\n\t[IsGrandTotalRowTotal] DESC, 'product'[Brand], 'product'[Color]",
+                "RowCount": 111
+            }
+        },
+        {
+            "name": "Execute Query",
+            "component": "AS",
+            "start": "2025-06-15T17:19:22.520Z",
+            "end": "2025-06-15T17:19:22.547Z",
+            "id": "921829CA-5D00-47CB-B9AF-7DAF49371663",
+            "parentId": "66a19e4c-6d82-4a1b-9e6c-b59004cffd30"
+        },
+        {
+            "name": "Serialize Rowset",
+            "component": "AS",
+            "start": "2025-06-15T17:19:22.547Z",
+            "end": "2025-06-15T17:19:22.547Z",
+            "id": "95615877-4D80-4839-ACCC-13CE99CC5F39",
+            "parentId": "921829CA-5D00-47CB-B9AF-7DAF49371663"
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:19:28.638Z",
+            "end": "2025-06-15T17:19:28.772Z",
+            "id": "d7a7636e9fe57a87b726-4241de8e18f2920ea57e",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Table",
+                "visualId": "d7a7636e9fe57a87b726",
+                "visualType": "tableEx",
+                "initialLoad": true
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:19:28.639Z",
+            "end": "2025-06-15T17:19:28.640Z",
+            "id": "0faab82c-6170-4690-b88d-6a18c17f0373",
+            "parentId": "d7a7636e9fe57a87b726-4241de8e18f2920ea57e"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:19:28.640Z",
+            "end": "2025-06-15T17:19:28.736Z",
+            "id": "f0f7d39d-d2ab-489b-99f7-90a433cd6e98",
+            "parentId": "d7a7636e9fe57a87b726-4241de8e18f2920ea57e"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:19:28.735Z",
+            "end": "2025-06-15T17:19:28.772Z",
+            "id": "eb37c456-b107-4ce6-a071-b56e0d915d57",
+            "parentId": "d7a7636e9fe57a87b726-4241de8e18f2920ea57e"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:19:28.745Z",
+            "end": "2025-06-15T17:19:28.746Z",
+            "id": "ccc1a476-3b93-43d5-9dc2-f66a8b92ca82",
+            "parentId": "eb37c456-b107-4ce6-a071-b56e0d915d57"
+        },
+        {
+            "name": "Visual Update Async",
+            "start": "2025-06-15T17:19:28.746Z",
+            "end": "2025-06-15T17:19:28.772Z",
+            "id": "8b554856-acba-4db5-85ef-dc255dd753ae",
+            "parentId": "eb37c456-b107-4ce6-a071-b56e0d915d57"
+        },
+        {
+            "name": "Visual Update",
+            "start": "2025-06-15T17:19:28.746Z",
+            "end": "2025-06-15T17:19:28.747Z",
+            "id": "4f1bfd5a-f6ca-4d01-8bde-5c44ca6b2280",
+            "parentId": "eb37c456-b107-4ce6-a071-b56e0d915d57"
+        },
+        {
+            "name": "Execute Semantic Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:28.665Z",
+            "end": "2025-06-15T17:19:28.706Z",
+            "id": "7df1a609-d3ef-4b54-bafa-9337368b2da3",
+            "parentId": "f0f7d39d-d2ab-489b-99f7-90a433cd6e98"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:19:28.641Z",
+            "end": "2025-06-15T17:19:28.641Z",
+            "id": "7014ad9f-aa9d-47b9-9ca2-18113c5345dc",
+            "parentId": "f0f7d39d-d2ab-489b-99f7-90a433cd6e98"
+        },
+        {
+            "name": "Query Pending",
+            "start": "2025-06-15T17:19:28.664Z",
+            "end": "2025-06-15T17:19:28.664Z",
+            "id": "3fe8f5cf-6d0b-4891-8f54-7e12acfeb7d1",
+            "parentId": "f0f7d39d-d2ab-489b-99f7-90a433cd6e98"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:19:28.731Z",
+            "end": "2025-06-15T17:19:28.734Z",
+            "id": "3a699f2b-93cb-482f-ae3b-44c78b31fa7e",
+            "parentId": "f0f7d39d-d2ab-489b-99f7-90a433cd6e98"
+        },
+        {
+            "name": "Execute DAX Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:28.692Z",
+            "end": "2025-06-15T17:19:28.700Z",
+            "id": "0792a1b9-d88a-4e4a-a46d-39041f7ffd9b",
+            "parentId": "7df1a609-d3ef-4b54-bafa-9337368b2da3",
+            "metrics": {
+                "QueryText": "DEFINE\r\n\tVAR __DS0Core = \r\n\t\tDISTINCT('product'[Unit Cost])\r\n\r\n\tVAR __DS0PrimaryWindowed = \r\n\t\tTOPN(501, __DS0Core, 'product'[Unit Cost], 1)\r\n\r\nEVALUATE\r\n\t__DS0PrimaryWindowed\r\n\r\nORDER BY\r\n\t'product'[Unit Cost]",
+                "RowCount": 480
+            }
+        },
+        {
+            "name": "Execute Query",
+            "component": "AS",
+            "start": "2025-06-15T17:19:28.693Z",
+            "end": "2025-06-15T17:19:28.703Z",
+            "id": "7E38A473-BC95-4159-AB59-F29F09289ABA",
+            "parentId": "0792a1b9-d88a-4e4a-a46d-39041f7ffd9b"
+        },
+        {
+            "name": "Serialize Rowset",
+            "component": "AS",
+            "start": "2025-06-15T17:19:28.700Z",
+            "end": "2025-06-15T17:19:28.703Z",
+            "id": "AD3D8F66-8CC1-489C-82AA-EAEDCB767725",
+            "parentId": "7E38A473-BC95-4159-AB59-F29F09289ABA"
+        },
+        {
+            "name": "User Action",
+            "component": "Report Canvas",
+            "start": "2025-06-15T17:19:31.547Z",
+            "id": "8ee6b78e23e65b2b1937",
+            "metrics": {
+                "sourceLabel": "UserAction_ChangeFilter"
+            }
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:19:31.567Z",
+            "end": "2025-06-15T17:19:31.703Z",
+            "id": "d7a7636e9fe57a87b726-92b6143966e6c9b67825",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Table",
+                "visualId": "d7a7636e9fe57a87b726",
+                "visualType": "tableEx",
+                "initialLoad": false
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:19:31.568Z",
+            "end": "2025-06-15T17:19:31.569Z",
+            "id": "a07b33e9-935c-4b32-b735-aac8a67feef0",
+            "parentId": "d7a7636e9fe57a87b726-92b6143966e6c9b67825"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:19:31.569Z",
+            "end": "2025-06-15T17:19:31.653Z",
+            "id": "bbfab779-2d9b-48bd-8161-c6d75d4527ee",
+            "parentId": "d7a7636e9fe57a87b726-92b6143966e6c9b67825"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:19:31.653Z",
+            "end": "2025-06-15T17:19:31.703Z",
+            "id": "1ab9da6d-f20e-42b6-a1d6-cd025f075797",
+            "parentId": "d7a7636e9fe57a87b726-92b6143966e6c9b67825"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:19:31.663Z",
+            "end": "2025-06-15T17:19:31.664Z",
+            "id": "07682315-5005-4a78-9296-304bdb5e7d0b",
+            "parentId": "1ab9da6d-f20e-42b6-a1d6-cd025f075797"
+        },
+        {
+            "name": "Visual Update Async",
+            "start": "2025-06-15T17:19:31.664Z",
+            "end": "2025-06-15T17:19:31.703Z",
+            "id": "06555f52-f975-4758-97d9-c5fbbf2ac631",
+            "parentId": "1ab9da6d-f20e-42b6-a1d6-cd025f075797"
+        },
+        {
+            "name": "Visual Update",
+            "start": "2025-06-15T17:19:31.664Z",
+            "end": "2025-06-15T17:19:31.664Z",
+            "id": "5f5f3648-e52a-462a-b7d9-3803fea54175",
+            "parentId": "1ab9da6d-f20e-42b6-a1d6-cd025f075797"
+        },
+        {
+            "name": "Execute Semantic Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:31.598Z",
+            "end": "2025-06-15T17:19:31.641Z",
+            "id": "8f80a131-b86e-4fb0-8093-be30aade36a0",
+            "parentId": "bbfab779-2d9b-48bd-8161-c6d75d4527ee"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:19:31.570Z",
+            "end": "2025-06-15T17:19:31.571Z",
+            "id": "fe5ce84d-6dab-4291-8032-be27fa40e4d6",
+            "parentId": "bbfab779-2d9b-48bd-8161-c6d75d4527ee"
+        },
+        {
+            "name": "Query Pending",
+            "start": "2025-06-15T17:19:31.603Z",
+            "end": "2025-06-15T17:19:31.603Z",
+            "id": "6ff3e9f3-996e-4902-a972-82408062c21e",
+            "parentId": "bbfab779-2d9b-48bd-8161-c6d75d4527ee"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:19:31.649Z",
+            "end": "2025-06-15T17:19:31.652Z",
+            "id": "8def72cd-85f2-4b70-bd05-151b3d8712c7",
+            "parentId": "bbfab779-2d9b-48bd-8161-c6d75d4527ee"
+        },
+        {
+            "name": "Execute DAX Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:31.605Z",
+            "end": "2025-06-15T17:19:31.639Z",
+            "id": "cc4d77d8-54b2-4e41-b0fb-7e400908e171",
+            "parentId": "8f80a131-b86e-4fb0-8093-be30aade36a0",
+            "metrics": {
+                "QueryText": "DEFINE\r\n\tVAR __DS0Core = \r\n\t\tSUMMARIZECOLUMNS(\r\n\t\t\tROLLUPADDISSUBTOTAL('product'[Unit Cost], \"IsGrandTotalRowTotal\"),\r\n\t\t\t\"SumQuantity\", CALCULATE(SUM('orderrows'[Quantity]))\r\n\t\t)\r\n\r\n\tVAR __DS0PrimaryWindowed = \r\n\t\tTOPN(502, __DS0Core, [IsGrandTotalRowTotal], 0, 'product'[Unit Cost], 1)\r\n\r\nEVALUATE\r\n\t__DS0PrimaryWindowed\r\n\r\nORDER BY\r\n\t[IsGrandTotalRowTotal] DESC, 'product'[Unit Cost]",
+                "RowCount": 476
+            }
+        },
+        {
+            "name": "Execute Query",
+            "component": "AS",
+            "start": "2025-06-15T17:19:31.607Z",
+            "end": "2025-06-15T17:19:31.640Z",
+            "id": "F3D61293-94FA-4234-A6FF-2603EEB5C1F9",
+            "parentId": "cc4d77d8-54b2-4e41-b0fb-7e400908e171"
+        },
+        {
+            "name": "Serialize Rowset",
+            "component": "AS",
+            "start": "2025-06-15T17:19:31.640Z",
+            "end": "2025-06-15T17:19:31.640Z",
+            "id": "457F8A31-5DCC-40A6-AC37-F7A9B0009C4C",
+            "parentId": "F3D61293-94FA-4234-A6FF-2603EEB5C1F9"
+        },
+        {
+            "name": "User Action",
+            "component": "Report Canvas",
+            "start": "2025-06-15T17:19:35.581Z",
+            "id": "d4c937eaff4e3218c7f0",
+            "metrics": {
+                "sourceLabel": "UserAction_ChangeFilter"
+            }
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:19:35.606Z",
+            "end": "2025-06-15T17:19:35.748Z",
+            "id": "d7a7636e9fe57a87b726-8d963f5c4aa785bb4a41",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Table",
+                "visualId": "d7a7636e9fe57a87b726",
+                "visualType": "tableEx",
+                "initialLoad": false
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:19:35.606Z",
+            "end": "2025-06-15T17:19:35.607Z",
+            "id": "7121f6ed-7c56-48ac-baf5-1c54b648ca19",
+            "parentId": "d7a7636e9fe57a87b726-8d963f5c4aa785bb4a41"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:19:35.607Z",
+            "end": "2025-06-15T17:19:35.697Z",
+            "id": "7ff129f7-15ed-4f08-8cb4-2df40eb8c124",
+            "parentId": "d7a7636e9fe57a87b726-8d963f5c4aa785bb4a41"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:19:35.696Z",
+            "end": "2025-06-15T17:19:35.748Z",
+            "id": "c33f3720-e360-4f73-96aa-763b41bf7fc6",
+            "parentId": "d7a7636e9fe57a87b726-8d963f5c4aa785bb4a41"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:19:35.707Z",
+            "end": "2025-06-15T17:19:35.708Z",
+            "id": "aa7e35d1-18f0-48a2-902b-9cf303c2b775",
+            "parentId": "c33f3720-e360-4f73-96aa-763b41bf7fc6"
+        },
+        {
+            "name": "Visual Update Async",
+            "start": "2025-06-15T17:19:35.708Z",
+            "end": "2025-06-15T17:19:35.748Z",
+            "id": "5109b1b2-0d84-4139-9fd8-6f10a519c39f",
+            "parentId": "c33f3720-e360-4f73-96aa-763b41bf7fc6"
+        },
+        {
+            "name": "Visual Update",
+            "start": "2025-06-15T17:19:35.708Z",
+            "end": "2025-06-15T17:19:35.709Z",
+            "id": "42a27671-476d-4ab9-b684-63cdab0c3bfc",
+            "parentId": "c33f3720-e360-4f73-96aa-763b41bf7fc6"
+        },
+        {
+            "name": "Execute Semantic Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:35.639Z",
+            "end": "2025-06-15T17:19:35.679Z",
+            "id": "ac693dd4-48ce-4d11-8b13-78a8a0ac9ab6",
+            "parentId": "7ff129f7-15ed-4f08-8cb4-2df40eb8c124"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:19:35.608Z",
+            "end": "2025-06-15T17:19:35.609Z",
+            "id": "2c0f64d3-a805-4218-98d2-df50e276ccc6",
+            "parentId": "7ff129f7-15ed-4f08-8cb4-2df40eb8c124"
+        },
+        {
+            "name": "Query Pending",
+            "start": "2025-06-15T17:19:35.644Z",
+            "end": "2025-06-15T17:19:35.645Z",
+            "id": "56edf381-5d92-4269-bd78-b5f57ba0a5f0",
+            "parentId": "7ff129f7-15ed-4f08-8cb4-2df40eb8c124"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:19:35.693Z",
+            "end": "2025-06-15T17:19:35.696Z",
+            "id": "cec57a95-42a5-4a46-a47a-4e9b77c28e53",
+            "parentId": "7ff129f7-15ed-4f08-8cb4-2df40eb8c124"
+        },
+        {
+            "name": "Execute DAX Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:35.647Z",
+            "end": "2025-06-15T17:19:35.679Z",
+            "id": "f31f3795-ea44-4ff0-aa33-455d37d6f29d",
+            "parentId": "ac693dd4-48ce-4d11-8b13-78a8a0ac9ab6",
+            "metrics": {
+                "QueryText": "DEFINE\r\n\tVAR __DS0Core = \r\n\t\tSUMMARIZECOLUMNS(\r\n\t\t\tROLLUPADDISSUBTOTAL('product'[Unit Cost], \"IsGrandTotalRowTotal\"),\r\n\t\t\t\"SumQuantity\", CALCULATE(SUM('orderrows'[Quantity])),\r\n\t\t\t\"SumUnit_Price\", CALCULATE(SUM('orderrows'[Unit Price]))\r\n\t\t)\r\n\r\n\tVAR __DS0PrimaryWindowed = \r\n\t\tTOPN(502, __DS0Core, [IsGrandTotalRowTotal], 0, 'product'[Unit Cost], 1)\r\n\r\nEVALUATE\r\n\t__DS0PrimaryWindowed\r\n\r\nORDER BY\r\n\t[IsGrandTotalRowTotal] DESC, 'product'[Unit Cost]",
+                "RowCount": 476
+            }
+        },
+        {
+            "name": "Execute Query",
+            "component": "AS",
+            "start": "2025-06-15T17:19:35.650Z",
+            "end": "2025-06-15T17:19:35.677Z",
+            "id": "1B4E844B-BD10-47E9-B399-1EE0FD2560DE",
+            "parentId": "f31f3795-ea44-4ff0-aa33-455d37d6f29d"
+        },
+        {
+            "name": "Serialize Rowset",
+            "component": "AS",
+            "start": "2025-06-15T17:19:35.677Z",
+            "end": "2025-06-15T17:19:35.677Z",
+            "id": "41E6F941-B31A-4C8F-A3D3-387F31CAB6DF",
+            "parentId": "1B4E844B-BD10-47E9-B399-1EE0FD2560DE"
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:19:40.227Z",
+            "end": "2025-06-15T17:19:40.228Z",
+            "id": "6efc6baebf15e183c001-d90b730c67c31dbaa317",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Card",
+                "visualId": "6efc6baebf15e183c001",
+                "visualType": "card",
+                "initialLoad": true
+            }
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:19:40.227Z",
+            "end": "2025-06-15T17:19:40.228Z",
+            "id": "29db9d64-2efe-4a76-888d-362be0edea7c",
+            "parentId": "6efc6baebf15e183c001-d90b730c67c31dbaa317"
+        },
+        {
+            "name": "User Action",
+            "component": "Report Canvas",
+            "start": "2025-06-15T17:19:41.603Z",
+            "id": "80a7a8122960d288d32f",
+            "metrics": {
+                "sourceLabel": "UserAction_ChangeFilter"
+            }
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:19:41.609Z",
+            "end": "2025-06-15T17:19:41.718Z",
+            "id": "6efc6baebf15e183c001-12a5024cd8892488a873",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Card",
+                "visualId": "6efc6baebf15e183c001",
+                "visualType": "card",
+                "initialLoad": false
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:19:41.609Z",
+            "end": "2025-06-15T17:19:41.611Z",
+            "id": "891ba85e-4d6c-4823-bc3c-ad026baedc0e",
+            "parentId": "6efc6baebf15e183c001-12a5024cd8892488a873"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:19:41.611Z",
+            "end": "2025-06-15T17:19:41.683Z",
+            "id": "3192b516-e283-4f47-b07e-1980e60c848c",
+            "parentId": "6efc6baebf15e183c001-12a5024cd8892488a873"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:19:41.682Z",
+            "end": "2025-06-15T17:19:41.718Z",
+            "id": "f65774e7-e5a7-4e5c-80ee-6da22f365768",
+            "parentId": "6efc6baebf15e183c001-12a5024cd8892488a873"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:19:41.706Z",
+            "end": "2025-06-15T17:19:41.706Z",
+            "id": "c0695308-db1d-4879-b961-46f74c8be742",
+            "parentId": "f65774e7-e5a7-4e5c-80ee-6da22f365768"
+        },
+        {
+            "name": "Execute Semantic Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:41.654Z",
+            "end": "2025-06-15T17:19:41.659Z",
+            "id": "59b8288a-ad01-46b2-b866-fe7ee8c0c16e",
+            "parentId": "3192b516-e283-4f47-b07e-1980e60c848c"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:19:41.613Z",
+            "end": "2025-06-15T17:19:41.614Z",
+            "id": "c6b76231-638f-4f0e-8187-08898f4bdd50",
+            "parentId": "3192b516-e283-4f47-b07e-1980e60c848c"
+        },
+        {
+            "name": "Query Pending",
+            "start": "2025-06-15T17:19:41.652Z",
+            "end": "2025-06-15T17:19:41.653Z",
+            "id": "40546383-86cd-4a65-b5e1-68067251f558",
+            "parentId": "3192b516-e283-4f47-b07e-1980e60c848c"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:19:41.682Z",
+            "end": "2025-06-15T17:19:41.682Z",
+            "id": "f439627f-7c35-41d6-9ef2-8bd70460ecb3",
+            "parentId": "3192b516-e283-4f47-b07e-1980e60c848c"
+        },
+        {
+            "name": "Execute DAX Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:41.655Z",
+            "end": "2025-06-15T17:19:41.659Z",
+            "id": "dd355c8a-d058-4b78-a9c2-2eb2ce77b9c5",
+            "parentId": "59b8288a-ad01-46b2-b866-fe7ee8c0c16e",
+            "metrics": {
+                "QueryText": "EVALUATE\r\n\tROW(\r\n\t\t\"SumNet_Price\", CALCULATE(SUM('orderrows'[Net Price]))\r\n\t)",
+                "RowCount": 1
+            }
+        },
+        {
+            "name": "Execute Query",
+            "component": "AS",
+            "start": "2025-06-15T17:19:41.657Z",
+            "end": "2025-06-15T17:19:41.663Z",
+            "id": "281F5F25-AFD2-4D33-8AF2-938BC00F0F5B",
+            "parentId": "dd355c8a-d058-4b78-a9c2-2eb2ce77b9c5"
+        },
+        {
+            "name": "Serialize Rowset",
+            "component": "AS",
+            "start": "2025-06-15T17:19:41.663Z",
+            "end": "2025-06-15T17:19:41.663Z",
+            "id": "88FDEEDB-3381-402A-B481-CB8DC2D0B702",
+            "parentId": "281F5F25-AFD2-4D33-8AF2-938BC00F0F5B"
+        },
+        {
+            "name": "User Action",
+            "component": "Report Canvas",
+            "start": "2025-06-15T17:19:49.728Z",
+            "id": "2a69c62dfa160db28d59",
+            "metrics": {
+                "sourceLabel": "UserAction_ChangeFilter"
+            }
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:19:49.778Z",
+            "end": "2025-06-15T17:19:49.912Z",
+            "id": "6efc6baebf15e183c001-88a8134e68a069a2d39a",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Sum of Net Price",
+                "visualId": "6efc6baebf15e183c001",
+                "visualType": "card",
+                "initialLoad": false
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:19:49.778Z",
+            "end": "2025-06-15T17:19:49.789Z",
+            "id": "946680bd-0f7d-444d-99d3-40d4252644d9",
+            "parentId": "6efc6baebf15e183c001-88a8134e68a069a2d39a"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:19:49.789Z",
+            "end": "2025-06-15T17:19:49.870Z",
+            "id": "9166933d-ab11-426f-95e6-8027509feb77",
+            "parentId": "6efc6baebf15e183c001-88a8134e68a069a2d39a"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:19:49.870Z",
+            "end": "2025-06-15T17:19:49.912Z",
+            "id": "7f8fc4b6-e308-4498-83f6-fa5c7634390c",
+            "parentId": "6efc6baebf15e183c001-88a8134e68a069a2d39a"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:19:49.885Z",
+            "end": "2025-06-15T17:19:49.887Z",
+            "id": "cb3b10bb-bbef-431e-8b58-97dd7b1bc884",
+            "parentId": "7f8fc4b6-e308-4498-83f6-fa5c7634390c"
+        },
+        {
+            "name": "Visual Update Async",
+            "start": "2025-06-15T17:19:49.887Z",
+            "end": "2025-06-15T17:19:49.912Z",
+            "id": "7376a98c-00b4-49c8-9c1e-f2c029e58523",
+            "parentId": "7f8fc4b6-e308-4498-83f6-fa5c7634390c"
+        },
+        {
+            "name": "Visual Update",
+            "start": "2025-06-15T17:19:49.887Z",
+            "end": "2025-06-15T17:19:49.887Z",
+            "id": "67162fc7-cf23-4d55-836d-6aa695595d68",
+            "parentId": "7f8fc4b6-e308-4498-83f6-fa5c7634390c"
+        },
+        {
+            "name": "Execute Semantic Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:49.845Z",
+            "end": "2025-06-15T17:19:49.867Z",
+            "id": "cb64a636-cf99-483f-9c6f-4b8a148a89a8",
+            "parentId": "9166933d-ab11-426f-95e6-8027509feb77"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:19:49.791Z",
+            "end": "2025-06-15T17:19:49.793Z",
+            "id": "94497828-bb0c-4b32-a33c-817588d115bc",
+            "parentId": "9166933d-ab11-426f-95e6-8027509feb77"
+        },
+        {
+            "name": "Query Pending",
+            "start": "2025-06-15T17:19:49.842Z",
+            "end": "2025-06-15T17:19:49.843Z",
+            "id": "348599c8-1b0e-4dc6-b972-ad9bf5266acc",
+            "parentId": "9166933d-ab11-426f-95e6-8027509feb77"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:19:49.869Z",
+            "end": "2025-06-15T17:19:49.870Z",
+            "id": "81559ab5-1f5a-4e2e-8862-72dccaa39476",
+            "parentId": "9166933d-ab11-426f-95e6-8027509feb77"
+        },
+        {
+            "name": "Execute DAX Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:19:49.856Z",
+            "end": "2025-06-15T17:19:49.864Z",
+            "id": "db81700a-0a42-4bc8-a1bf-5231ee44da93",
+            "parentId": "cb64a636-cf99-483f-9c6f-4b8a148a89a8",
+            "metrics": {
+                "QueryText": "EVALUATE\r\n\tROW(\r\n\t\t\"SumNet_Price\", CALCULATE(SUM('orderrows'[Net Price]))\r\n\t)",
+                "RowCount": 1
+            }
+        },
+        {
+            "name": "Execute Query",
+            "component": "AS",
+            "start": "2025-06-15T17:19:49.863Z",
+            "end": "2025-06-15T17:19:49.867Z",
+            "id": "D561ACE5-8CF9-4599-803B-7B9D9C9C036E",
+            "parentId": "db81700a-0a42-4bc8-a1bf-5231ee44da93"
+        },
+        {
+            "name": "Serialize Rowset",
+            "component": "AS",
+            "start": "2025-06-15T17:19:49.867Z",
+            "end": "2025-06-15T17:19:49.867Z",
+            "id": "FDCD05EA-7D82-4223-A6D2-724086D072E6",
+            "parentId": "D561ACE5-8CF9-4599-803B-7B9D9C9C036E"
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:19:55.718Z",
+            "end": "2025-06-15T17:19:55.869Z",
+            "id": "6efc6baebf15e183c001-d23bbe5c4150cb5344c6",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Card",
+                "visualId": "6efc6baebf15e183c001",
+                "visualType": "card",
+                "initialLoad": true
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:19:55.719Z",
+            "end": "2025-06-15T17:19:55.721Z",
+            "id": "fc8803f0-58e3-4656-b1be-13435a7e9f2f",
+            "parentId": "6efc6baebf15e183c001-d23bbe5c4150cb5344c6"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:19:55.721Z",
+            "end": "2025-06-15T17:19:55.823Z",
+            "id": "02297e6f-9cda-406b-b4b5-cf7db641fb29",
+            "parentId": "6efc6baebf15e183c001-d23bbe5c4150cb5344c6"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:19:55.822Z",
+            "end": "2025-06-15T17:19:55.868Z",
+            "id": "83d15888-cb12-4cf4-bf45-5f363e1e9c23",
+            "parentId": "6efc6baebf15e183c001-d23bbe5c4150cb5344c6"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:19:55.862Z",
+            "end": "2025-06-15T17:19:55.863Z",
+            "id": "a5bae0e8-b1b7-4331-9867-8c765246ea1c",
+            "parentId": "83d15888-cb12-4cf4-bf45-5f363e1e9c23"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:19:55.722Z",
+            "end": "2025-06-15T17:19:55.723Z",
+            "id": "78245e7e-53d5-4e97-8f2a-8b3c1b8653ba",
+            "parentId": "02297e6f-9cda-406b-b4b5-cf7db641fb29"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:19:55.817Z",
+            "end": "2025-06-15T17:19:55.818Z",
+            "id": "ee1000e8-5ec5-48c0-9759-cd0e27df5c2f",
+            "parentId": "02297e6f-9cda-406b-b4b5-cf7db641fb29"
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:19:55.734Z",
+            "end": "2025-06-15T17:19:55.965Z",
+            "id": "d7a7636e9fe57a87b726-c0a35f894d62232579f3",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Table",
+                "visualId": "d7a7636e9fe57a87b726",
+                "visualType": "tableEx",
+                "initialLoad": true
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:19:55.735Z",
+            "end": "2025-06-15T17:19:55.737Z",
+            "id": "764615ce-71db-4b0c-9785-16c4d21565e7",
+            "parentId": "d7a7636e9fe57a87b726-c0a35f894d62232579f3"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:19:55.737Z",
+            "end": "2025-06-15T17:19:55.823Z",
+            "id": "0892b96c-236e-4525-9f9d-8dd201f1c49c",
+            "parentId": "d7a7636e9fe57a87b726-c0a35f894d62232579f3"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:19:55.823Z",
+            "end": "2025-06-15T17:19:55.965Z",
+            "id": "b12611cf-5485-4b61-a6d1-5f2153b851f5",
+            "parentId": "d7a7636e9fe57a87b726-c0a35f894d62232579f3"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:19:55.859Z",
+            "end": "2025-06-15T17:19:55.859Z",
+            "id": "048c101e-edca-484f-b76e-33ef7e6105fa",
+            "parentId": "b12611cf-5485-4b61-a6d1-5f2153b851f5"
+        },
+        {
+            "name": "Visual Update Async",
+            "start": "2025-06-15T17:19:55.860Z",
+            "end": "2025-06-15T17:19:55.965Z",
+            "id": "ddb09657-a38f-4bfd-9c3f-70b6635bf20f",
+            "parentId": "b12611cf-5485-4b61-a6d1-5f2153b851f5"
+        },
+        {
+            "name": "Visual Update",
+            "start": "2025-06-15T17:19:55.860Z",
+            "end": "2025-06-15T17:19:55.860Z",
+            "id": "5722ce1b-bb9a-4390-bba0-ffd9c3d3b0f5",
+            "parentId": "b12611cf-5485-4b61-a6d1-5f2153b851f5"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:19:55.738Z",
+            "end": "2025-06-15T17:19:55.739Z",
+            "id": "ca3533f7-9b41-41f2-815b-3611b4c94b72",
+            "parentId": "0892b96c-236e-4525-9f9d-8dd201f1c49c"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:19:55.818Z",
+            "end": "2025-06-15T17:19:55.821Z",
+            "id": "b20ac83a-7e0d-451a-a428-54058b7152ca",
+            "parentId": "0892b96c-236e-4525-9f9d-8dd201f1c49c"
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:19:55.736Z",
+            "end": "2025-06-15T17:19:55.951Z",
+            "id": "3c5da33d296c579b6b37-e337cf90b621f3029cbe",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Table",
+                "visualId": "3c5da33d296c579b6b37",
+                "visualType": "tableEx",
+                "initialLoad": true
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:19:55.736Z",
+            "end": "2025-06-15T17:19:55.738Z",
+            "id": "72bb6dd6-5f52-4da5-8ae3-0806972c9962",
+            "parentId": "3c5da33d296c579b6b37-e337cf90b621f3029cbe"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:19:55.738Z",
+            "end": "2025-06-15T17:19:55.824Z",
+            "id": "f031c398-dba2-41f5-8124-bc964569a72b",
+            "parentId": "3c5da33d296c579b6b37-e337cf90b621f3029cbe"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:19:55.824Z",
+            "end": "2025-06-15T17:19:55.951Z",
+            "id": "1fe21f8a-0f74-4482-a10e-4d65e0336650",
+            "parentId": "3c5da33d296c579b6b37-e337cf90b621f3029cbe"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:19:55.857Z",
+            "end": "2025-06-15T17:19:55.858Z",
+            "id": "9db993d6-a1ce-4e61-bc34-b1c0a88c021e",
+            "parentId": "1fe21f8a-0f74-4482-a10e-4d65e0336650"
+        },
+        {
+            "name": "Visual Update Async",
+            "start": "2025-06-15T17:19:55.858Z",
+            "end": "2025-06-15T17:19:55.950Z",
+            "id": "eeb16507-88bb-4a89-9192-2dbd8e5e561b",
+            "parentId": "1fe21f8a-0f74-4482-a10e-4d65e0336650"
+        },
+        {
+            "name": "Visual Update",
+            "start": "2025-06-15T17:19:55.858Z",
+            "end": "2025-06-15T17:19:55.858Z",
+            "id": "40c63839-57be-4d64-bd14-2506691f0d65",
+            "parentId": "1fe21f8a-0f74-4482-a10e-4d65e0336650"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:19:55.740Z",
+            "end": "2025-06-15T17:19:55.741Z",
+            "id": "de716925-bf9a-47e5-a94c-77ba092a7153",
+            "parentId": "f031c398-dba2-41f5-8124-bc964569a72b"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:19:55.821Z",
+            "end": "2025-06-15T17:19:55.822Z",
+            "id": "e5bd050d-7a57-424d-9a5a-1a4601814fec",
+            "parentId": "f031c398-dba2-41f5-8124-bc964569a72b"
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:19:58.450Z",
+            "end": "2025-06-15T17:19:58.452Z",
+            "id": "f4d7fe9a73cb51659be2-980f36f5aae719a50848",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Pie chart",
+                "visualId": "f4d7fe9a73cb51659be2",
+                "visualType": "pieChart",
+                "initialLoad": true
+            }
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:19:58.450Z",
+            "end": "2025-06-15T17:19:58.452Z",
+            "id": "4c43900d-15de-4c55-b703-48a3acd44745",
+            "parentId": "f4d7fe9a73cb51659be2-980f36f5aae719a50848"
+        },
+        {
+            "name": "User Action",
+            "component": "Report Canvas",
+            "start": "2025-06-15T17:20:02.290Z",
+            "id": "f3a1164409a87fa479f5",
+            "metrics": {
+                "sourceLabel": "UserAction_ChangeFilter"
+            }
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:20:02.342Z",
+            "end": "2025-06-15T17:20:02.488Z",
+            "id": "f4d7fe9a73cb51659be2-66935b4e3983d991798c",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Color",
+                "visualId": "f4d7fe9a73cb51659be2",
+                "visualType": "pieChart",
+                "initialLoad": false
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:20:02.343Z",
+            "end": "2025-06-15T17:20:02.346Z",
+            "id": "93636bad-81f2-49bd-92b0-4999bb8db34a",
+            "parentId": "f4d7fe9a73cb51659be2-66935b4e3983d991798c"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:20:02.346Z",
+            "end": "2025-06-15T17:20:02.473Z",
+            "id": "0cda6cb0-efb4-453e-ac86-8c4a97bbde23",
+            "parentId": "f4d7fe9a73cb51659be2-66935b4e3983d991798c"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:20:02.472Z",
+            "end": "2025-06-15T17:20:02.488Z",
+            "id": "1c7018c6-c095-4639-b20a-8b8902dbf29e",
+            "parentId": "f4d7fe9a73cb51659be2-66935b4e3983d991798c"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:20:02.483Z",
+            "end": "2025-06-15T17:20:02.485Z",
+            "id": "6c76e84b-01a0-44d5-bfa3-5bf4a7e05f95",
+            "parentId": "1c7018c6-c095-4639-b20a-8b8902dbf29e"
+        },
+        {
+            "name": "Visual Update Async",
+            "start": "2025-06-15T17:20:02.485Z",
+            "end": "2025-06-15T17:20:02.488Z",
+            "id": "cc4ffc57-c49f-4e6d-bf58-fa8221a544ad",
+            "parentId": "1c7018c6-c095-4639-b20a-8b8902dbf29e"
+        },
+        {
+            "name": "Visual Update",
+            "start": "2025-06-15T17:20:02.485Z",
+            "end": "2025-06-15T17:20:02.485Z",
+            "id": "129ce0ec-f3eb-4121-acd6-c8ff1e4aa9ee",
+            "parentId": "1c7018c6-c095-4639-b20a-8b8902dbf29e"
+        },
+        {
+            "name": "Execute Semantic Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:20:02.407Z",
+            "end": "2025-06-15T17:20:02.463Z",
+            "id": "5f6f1ac4-70ef-46e4-8f24-159713a2c2cf",
+            "parentId": "0cda6cb0-efb4-453e-ac86-8c4a97bbde23"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:20:02.347Z",
+            "end": "2025-06-15T17:20:02.348Z",
+            "id": "0d03b860-4468-48c7-bb1b-446e4e0439ab",
+            "parentId": "0cda6cb0-efb4-453e-ac86-8c4a97bbde23"
+        },
+        {
+            "name": "Query Pending",
+            "start": "2025-06-15T17:20:02.406Z",
+            "end": "2025-06-15T17:20:02.406Z",
+            "id": "827e1d96-4960-4dd8-9d46-70e210f04d49",
+            "parentId": "0cda6cb0-efb4-453e-ac86-8c4a97bbde23"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:20:02.470Z",
+            "end": "2025-06-15T17:20:02.472Z",
+            "id": "98dced84-9c54-4f53-88f9-692053755438",
+            "parentId": "0cda6cb0-efb4-453e-ac86-8c4a97bbde23"
+        },
+        {
+            "name": "Execute DAX Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:20:02.450Z",
+            "end": "2025-06-15T17:20:02.458Z",
+            "id": "5aaf664a-3656-40ca-99d0-3cfd60dc1b8c",
+            "parentId": "5f6f1ac4-70ef-46e4-8f24-159713a2c2cf",
+            "metrics": {
+                "QueryText": "DEFINE\r\n\tVAR __DS0Core = \r\n\t\tDISTINCT('product'[Color])\r\n\r\n\tVAR __DS0BodyLimited = \r\n\t\tTOPN(1002, __DS0Core, 'product'[Color], 1)\r\n\r\nEVALUATE\r\n\t__DS0BodyLimited\r\n\r\nORDER BY\r\n\t'product'[Color]",
+                "RowCount": 16
+            }
+        },
+        {
+            "name": "Execute Query",
+            "component": "AS",
+            "start": "2025-06-15T17:20:02.457Z",
+            "end": "2025-06-15T17:20:02.460Z",
+            "id": "C72B5805-4601-4EE0-870C-1657DFB3B22D",
+            "parentId": "5aaf664a-3656-40ca-99d0-3cfd60dc1b8c"
+        },
+        {
+            "name": "Serialize Rowset",
+            "component": "AS",
+            "start": "2025-06-15T17:20:02.460Z",
+            "end": "2025-06-15T17:20:02.460Z",
+            "id": "054BA45D-C109-4255-BC5F-AE2ECBD5F6FF",
+            "parentId": "C72B5805-4601-4EE0-870C-1657DFB3B22D"
+        },
+        {
+            "name": "User Action",
+            "component": "Report Canvas",
+            "start": "2025-06-15T17:20:04.291Z",
+            "id": "aa948bd357045e9edbdf",
+            "metrics": {
+                "sourceLabel": "UserAction_ChangeFilter"
+            }
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:20:04.344Z",
+            "end": "2025-06-15T17:20:04.466Z",
+            "id": "f4d7fe9a73cb51659be2-e042c998395154489222",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Sum of Unit Cost by Color",
+                "visualId": "f4d7fe9a73cb51659be2",
+                "visualType": "pieChart",
+                "initialLoad": false
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:20:04.345Z",
+            "end": "2025-06-15T17:20:04.348Z",
+            "id": "b9ed88c6-35d0-4505-990c-854124f177b1",
+            "parentId": "f4d7fe9a73cb51659be2-e042c998395154489222"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:20:04.348Z",
+            "end": "2025-06-15T17:20:04.432Z",
+            "id": "4d3c6ae4-9022-4152-85ad-fe676aa1a98f",
+            "parentId": "f4d7fe9a73cb51659be2-e042c998395154489222"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:20:04.432Z",
+            "end": "2025-06-15T17:20:04.466Z",
+            "id": "c9907a0b-12ef-409a-8862-6dc8bd42cc7a",
+            "parentId": "f4d7fe9a73cb51659be2-e042c998395154489222"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:20:04.447Z",
+            "end": "2025-06-15T17:20:04.449Z",
+            "id": "ae693a16-842e-4a97-b6ec-d47aefa6e8af",
+            "parentId": "c9907a0b-12ef-409a-8862-6dc8bd42cc7a"
+        },
+        {
+            "name": "Visual Update Async",
+            "start": "2025-06-15T17:20:04.449Z",
+            "end": "2025-06-15T17:20:04.465Z",
+            "id": "6182cde0-e538-4301-877b-b99965c73b0f",
+            "parentId": "c9907a0b-12ef-409a-8862-6dc8bd42cc7a"
+        },
+        {
+            "name": "Visual Update",
+            "start": "2025-06-15T17:20:04.449Z",
+            "end": "2025-06-15T17:20:04.449Z",
+            "id": "9c7aeaa5-7f6c-490b-9836-0f9fd0af6bb5",
+            "parentId": "c9907a0b-12ef-409a-8862-6dc8bd42cc7a"
+        },
+        {
+            "name": "Execute Semantic Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:20:04.408Z",
+            "end": "2025-06-15T17:20:04.424Z",
+            "id": "ec29f2e4-0de5-46c8-aad1-2ad62084ef60",
+            "parentId": "4d3c6ae4-9022-4152-85ad-fe676aa1a98f"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:20:04.350Z",
+            "end": "2025-06-15T17:20:04.351Z",
+            "id": "07ea1973-ec30-43a0-b6aa-c95ea648316e",
+            "parentId": "4d3c6ae4-9022-4152-85ad-fe676aa1a98f"
+        },
+        {
+            "name": "Query Pending",
+            "start": "2025-06-15T17:20:04.412Z",
+            "end": "2025-06-15T17:20:04.412Z",
+            "id": "f00c496d-a4c6-462e-8985-d7cfbd6eda18",
+            "parentId": "4d3c6ae4-9022-4152-85ad-fe676aa1a98f"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:20:04.431Z",
+            "end": "2025-06-15T17:20:04.432Z",
+            "id": "091b3376-26da-4c8a-83dd-8479095d3d33",
+            "parentId": "4d3c6ae4-9022-4152-85ad-fe676aa1a98f"
+        },
+        {
+            "name": "Execute DAX Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:20:04.416Z",
+            "end": "2025-06-15T17:20:04.424Z",
+            "id": "da0b0e07-f4ba-46f8-826f-38b734daf32c",
+            "parentId": "ec29f2e4-0de5-46c8-aad1-2ad62084ef60",
+            "metrics": {
+                "QueryText": "DEFINE\r\n\tVAR __DS0Core = \r\n\t\tSUMMARIZECOLUMNS('product'[Color], \"SumUnit_Cost\", CALCULATE(SUM('orderrows'[Unit Cost])))\r\n\r\n\tVAR __DS0BodyLimited = \r\n\t\tTOPN(1002, __DS0Core, [SumUnit_Cost], 0, 'product'[Color], 1)\r\n\r\nEVALUATE\r\n\t__DS0BodyLimited\r\n\r\nORDER BY\r\n\t[SumUnit_Cost] DESC, 'product'[Color]",
+                "RowCount": 16
+            }
+        },
+        {
+            "name": "Execute Query",
+            "component": "AS",
+            "start": "2025-06-15T17:20:04.423Z",
+            "end": "2025-06-15T17:20:04.427Z",
+            "id": "A59AF4E2-0224-4666-BB01-EE84977E215E",
+            "parentId": "da0b0e07-f4ba-46f8-826f-38b734daf32c"
+        },
+        {
+            "name": "Serialize Rowset",
+            "component": "AS",
+            "start": "2025-06-15T17:20:04.427Z",
+            "end": "2025-06-15T17:20:04.427Z",
+            "id": "61898A52-5159-4051-BE36-247B132BF4A8",
+            "parentId": "A59AF4E2-0224-4666-BB01-EE84977E215E"
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:20:08.545Z",
+            "end": "2025-06-15T17:20:08.547Z",
+            "id": "d68b2cf979286c5c595c-bd0678a86cd49a8a6ed8",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Stacked column chart",
+                "visualId": "d68b2cf979286c5c595c",
+                "visualType": "columnChart",
+                "initialLoad": true
+            }
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:20:08.546Z",
+            "end": "2025-06-15T17:20:08.547Z",
+            "id": "0900eb31-7c84-49b6-811b-4650a95c433f",
+            "parentId": "d68b2cf979286c5c595c-bd0678a86cd49a8a6ed8"
+        },
+        {
+            "name": "User Action",
+            "component": "Report Canvas",
+            "start": "2025-06-15T17:20:13.569Z",
+            "id": "f70c333c0c72612d06a6",
+            "metrics": {
+                "sourceLabel": "UserAction_ChangeFilter"
+            }
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:20:13.622Z",
+            "end": "2025-06-15T17:20:13.759Z",
+            "id": "d68b2cf979286c5c595c-2e2857450bf14b1563fb",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Manufacturer",
+                "visualId": "d68b2cf979286c5c595c",
+                "visualType": "columnChart",
+                "initialLoad": false
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:20:13.623Z",
+            "end": "2025-06-15T17:20:13.626Z",
+            "id": "2f692ff3-2307-4a73-b801-8d8892a802a7",
+            "parentId": "d68b2cf979286c5c595c-2e2857450bf14b1563fb"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:20:13.626Z",
+            "end": "2025-06-15T17:20:13.708Z",
+            "id": "9f5770f0-4b74-4ac9-b9a3-01c4990cac46",
+            "parentId": "d68b2cf979286c5c595c-2e2857450bf14b1563fb"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:20:13.708Z",
+            "end": "2025-06-15T17:20:13.759Z",
+            "id": "ad983292-aabc-4a3c-894b-12cc76d713b1",
+            "parentId": "d68b2cf979286c5c595c-2e2857450bf14b1563fb"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:20:13.731Z",
+            "end": "2025-06-15T17:20:13.733Z",
+            "id": "4b9987c4-d1b8-4fae-a728-d007b282a08d",
+            "parentId": "ad983292-aabc-4a3c-894b-12cc76d713b1"
+        },
+        {
+            "name": "Visual Update Async",
+            "start": "2025-06-15T17:20:13.733Z",
+            "end": "2025-06-15T17:20:13.759Z",
+            "id": "93d09291-1de4-4652-8a23-6cb35f71eae6",
+            "parentId": "ad983292-aabc-4a3c-894b-12cc76d713b1"
+        },
+        {
+            "name": "Visual Update",
+            "start": "2025-06-15T17:20:13.734Z",
+            "end": "2025-06-15T17:20:13.734Z",
+            "id": "3769a164-42af-412a-b9a6-7b8004227948",
+            "parentId": "ad983292-aabc-4a3c-894b-12cc76d713b1"
+        },
+        {
+            "name": "Execute Semantic Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:20:13.685Z",
+            "end": "2025-06-15T17:20:13.693Z",
+            "id": "4312dd4b-894e-4835-8960-1d0e28694f92",
+            "parentId": "9f5770f0-4b74-4ac9-b9a3-01c4990cac46"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:20:13.627Z",
+            "end": "2025-06-15T17:20:13.630Z",
+            "id": "4296f766-c00e-4a3d-91d3-60480cb78c01",
+            "parentId": "9f5770f0-4b74-4ac9-b9a3-01c4990cac46"
+        },
+        {
+            "name": "Query Pending",
+            "start": "2025-06-15T17:20:13.687Z",
+            "end": "2025-06-15T17:20:13.687Z",
+            "id": "f1a6b6cc-d80b-4792-af54-30b1175321ac",
+            "parentId": "9f5770f0-4b74-4ac9-b9a3-01c4990cac46"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:20:13.707Z",
+            "end": "2025-06-15T17:20:13.707Z",
+            "id": "ec81dc76-69f9-4ed7-a7d3-b31428eb9091",
+            "parentId": "9f5770f0-4b74-4ac9-b9a3-01c4990cac46"
+        },
+        {
+            "name": "Execute DAX Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:20:13.685Z",
+            "end": "2025-06-15T17:20:13.693Z",
+            "id": "666da675-6056-4cc8-9886-6f2e20f68eb3",
+            "parentId": "4312dd4b-894e-4835-8960-1d0e28694f92",
+            "metrics": {
+                "QueryText": "DEFINE\r\n\tVAR __DS0Core = \r\n\t\tDISTINCT('product'[Manufacturer])\r\n\r\n\tVAR __DS0PrimaryWindowed = \r\n\t\tTOPN(1001, __DS0Core, 'product'[Manufacturer], 1)\r\n\r\nEVALUATE\r\n\t__DS0PrimaryWindowed\r\n\r\nORDER BY\r\n\t'product'[Manufacturer]",
+                "RowCount": 11
+            }
+        },
+        {
+            "name": "Execute Query",
+            "component": "AS",
+            "start": "2025-06-15T17:20:13.693Z",
+            "end": "2025-06-15T17:20:13.697Z",
+            "id": "B6B2F78E-79AF-403C-A9FB-22343096DAE6",
+            "parentId": "666da675-6056-4cc8-9886-6f2e20f68eb3"
+        },
+        {
+            "name": "Serialize Rowset",
+            "component": "AS",
+            "start": "2025-06-15T17:20:13.697Z",
+            "end": "2025-06-15T17:20:13.697Z",
+            "id": "B173A0BF-42F7-40DF-9C31-03A30211F9B8",
+            "parentId": "B6B2F78E-79AF-403C-A9FB-22343096DAE6"
+        },
+        {
+            "name": "User Action",
+            "component": "Report Canvas",
+            "start": "2025-06-15T17:20:15.234Z",
+            "id": "e3ea7044af61ee4184f9",
+            "metrics": {
+                "sourceLabel": "UserAction_ChangeFilter"
+            }
+        },
+        {
+            "name": "Visual Container Lifecycle",
+            "start": "2025-06-15T17:20:15.286Z",
+            "end": "2025-06-15T17:20:15.430Z",
+            "id": "d68b2cf979286c5c595c-1591449ba4526db9ab7a",
+            "metrics": {
+                "status": 1,
+                "visualTitle": "Sum of Unit Cost by Manufacturer",
+                "visualId": "d68b2cf979286c5c595c",
+                "visualType": "columnChart",
+                "initialLoad": false
+            }
+        },
+        {
+            "name": "Resolve Parameters",
+            "start": "2025-06-15T17:20:15.287Z",
+            "end": "2025-06-15T17:20:15.290Z",
+            "id": "65ac70ab-f0a2-45a5-bb29-b000997f37f7",
+            "parentId": "d68b2cf979286c5c595c-1591449ba4526db9ab7a"
+        },
+        {
+            "name": "Query",
+            "start": "2025-06-15T17:20:15.290Z",
+            "end": "2025-06-15T17:20:15.381Z",
+            "id": "6e9c98b4-1f42-4da3-87bf-f332c72a41c2",
+            "parentId": "d68b2cf979286c5c595c-1591449ba4526db9ab7a"
+        },
+        {
+            "name": "Render",
+            "start": "2025-06-15T17:20:15.380Z",
+            "end": "2025-06-15T17:20:15.430Z",
+            "id": "ade0fd54-1c30-44dc-acc3-f523d05034b1",
+            "parentId": "d68b2cf979286c5c595c-1591449ba4526db9ab7a"
+        },
+        {
+            "name": "Data View Transform",
+            "start": "2025-06-15T17:20:15.397Z",
+            "end": "2025-06-15T17:20:15.398Z",
+            "id": "2ea525f8-9376-49cd-a963-31fd45dcf266",
+            "parentId": "ade0fd54-1c30-44dc-acc3-f523d05034b1"
+        },
+        {
+            "name": "Visual Update Async",
+            "start": "2025-06-15T17:20:15.398Z",
+            "end": "2025-06-15T17:20:15.430Z",
+            "id": "e9e78c20-792b-4da0-82a9-63a3e5c86a6b",
+            "parentId": "ade0fd54-1c30-44dc-acc3-f523d05034b1"
+        },
+        {
+            "name": "Visual Update",
+            "start": "2025-06-15T17:20:15.399Z",
+            "end": "2025-06-15T17:20:15.399Z",
+            "id": "ee36c5e8-33a1-4960-a466-a426252a7159",
+            "parentId": "ade0fd54-1c30-44dc-acc3-f523d05034b1"
+        },
+        {
+            "name": "Execute Semantic Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:20:15.360Z",
+            "end": "2025-06-15T17:20:15.366Z",
+            "id": "21aab450-7693-422d-a921-c710e8c3c6ee",
+            "parentId": "6e9c98b4-1f42-4da3-87bf-f332c72a41c2"
+        },
+        {
+            "name": "Query Generation",
+            "start": "2025-06-15T17:20:15.292Z",
+            "end": "2025-06-15T17:20:15.293Z",
+            "id": "606a7a56-a0bf-40c7-aa28-7d10995ff5ce",
+            "parentId": "6e9c98b4-1f42-4da3-87bf-f332c72a41c2"
+        },
+        {
+            "name": "Query Pending",
+            "start": "2025-06-15T17:20:15.360Z",
+            "end": "2025-06-15T17:20:15.361Z",
+            "id": "de684d88-432c-4c8b-a293-e54a01a72874",
+            "parentId": "6e9c98b4-1f42-4da3-87bf-f332c72a41c2"
+        },
+        {
+            "name": "Parse Query Result",
+            "start": "2025-06-15T17:20:15.379Z",
+            "end": "2025-06-15T17:20:15.380Z",
+            "id": "e0db69cd-ef02-4c88-a28f-a72f5b213862",
+            "parentId": "6e9c98b4-1f42-4da3-87bf-f332c72a41c2"
+        },
+        {
+            "name": "Execute DAX Query",
+            "component": "DSE",
+            "start": "2025-06-15T17:20:15.360Z",
+            "end": "2025-06-15T17:20:15.366Z",
+            "id": "9bd1246b-0cef-4187-a6ae-2a441c34dfac",
+            "parentId": "21aab450-7693-422d-a921-c710e8c3c6ee",
+            "metrics": {
+                "QueryText": "DEFINE\r\n\tVAR __DS0Core = \r\n\t\tSUMMARIZECOLUMNS('product'[Manufacturer], \"SumUnit_Cost\", CALCULATE(SUM('orderrows'[Unit Cost])))\r\n\r\n\tVAR __DS0PrimaryWindowed = \r\n\t\tTOPN(1001, __DS0Core, [SumUnit_Cost], 0, 'product'[Manufacturer], 1)\r\n\r\nEVALUATE\r\n\t__DS0PrimaryWindowed\r\n\r\nORDER BY\r\n\t[SumUnit_Cost] DESC, 'product'[Manufacturer]",
+                "RowCount": 11
+            }
+        },
+        {
+            "name": "Execute Query",
+            "component": "AS",
+            "start": "2025-06-15T17:20:15.367Z",
+            "end": "2025-06-15T17:20:15.370Z",
+            "id": "A740FED2-8595-4DD5-B2F5-BD93CE7E26B6",
+            "parentId": "9bd1246b-0cef-4187-a6ae-2a441c34dfac"
+        },
+        {
+            "name": "Serialize Rowset",
+            "component": "AS",
+            "start": "2025-06-15T17:20:15.370Z",
+            "end": "2025-06-15T17:20:15.370Z",
+            "id": "3653D43B-E02C-4667-A9AD-36F045942A1A",
+            "parentId": "A740FED2-8595-4DD5-B2F5-BD93CE7E26B6"
+        }
+    ],
+    "sessionId": "a60ccc7d-053e-4098-9fd2-e2467c0183e1"
+}

@@ -274,84 +274,128 @@ class PowerBIRegressionTester:
     #     df['pageName'] = page_names
     #     return df
 
-    def load_events(self):
+    # def load_events(self):
+    #     """
+    #     Load and flatten all events from JSON files in the PBI PA Files folder.
+
+    #     Returns:
+    #         pd.DataFrame: Combined DataFrame of all events.
+    #     """
+    #     all_dfs = []
+
+    #     if self.pbi_report_folder:
+    #         visualid_to_pagename = self.build_visualid_to_pagename_map(self.pbi_report_folder)
+
+    #     for json_path in glob.glob(os.path.join(self.power_bi_perf_analyzer_query_folder, r"*.json")):
+    #         with open(json_path, "r", encoding="utf-8-sig") as f:
+    #             data = json.load(f)
+    #         events = data.get("events", [])
+    #         flat_events = [self.flatten_event(e) for e in events]
+    #         df = pd.DataFrame(flat_events)
+    #         if not df.empty:
+    #             id_map = {event['id']: event for event in events if 'id' in event}
+    #             df['VisualID'] = df['id'].apply(lambda x: self.find_visual_id(id_map, x))
+    #             if self.pbi_report_folder:
+    #                 df['PageName'] = df['VisualID'].map(visualid_to_pagename)
+    #             else:
+    #                 df['PageName'] = ""
+
+    #             df['ResultSets'] = 0
+
+    #             all_dfs.append(df)
+    #     if all_dfs:
+    #         concat_df = pd.concat(all_dfs, ignore_index=True)
+    #         filtered_df = concat_df[concat_df['name'] == 'Execute DAX Query'].copy()
+    #         filtered_df.drop_duplicates(inplace=True)
+
+    #         # filtered_df = filtered_df.rename(columns={
+    #         #     "id": "ID", 
+    #         #     "QueryText": "Query"
+    #         # })
+    #         # filtered_df = filtered_df.drop([
+    #         #     'name', 'component', 'start', 'end', 'sourceLabel', 'status',
+    #         #     'visualTitle', 'visualType', 'visualId', 'initialLoad', 'parentId'
+    #         # ], axis=1)
+    #         # desired_order = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']
+    #         # filtered_df = filtered_df[desired_order]
+
+    #         filtered_df = filtered_df.rename(columns={"id": "ID", "QueryText": "Query"})
+    #         desired_order = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']
+    #         filtered_df = filtered_df[desired_order]
+
+    #         return filtered_df
+    #     return pd.DataFrame()
+
+    def load_events(self, query_type):
         """
         Load and flatten all events from JSON files in the PBI PA Files folder.
 
         Returns:
             pd.DataFrame: Combined DataFrame of all events.
         """
+        # query_folder = None
+        # if query_type == self.QueryType.PERFORMANCE_ANALYZER:
+        #     query_folder = self.power_bi_perf_analyzer_query_folder
+        # elif query_type == self.QueryType.DAX_STUDIO:
+        #     query_folder = self.dax_studio_query_folder
+
         all_dfs = []
+        filtered_df = pd.DataFrame()
 
-        if self.pbi_report_folder:
-            visualid_to_pagename = self.build_visualid_to_pagename_map(self.pbi_report_folder)
-
-        for json_path in glob.glob(os.path.join(self.power_bi_perf_analyzer_query_folder, r"*.json")):
-            with open(json_path, "r", encoding="utf-8-sig") as f:
-                data = json.load(f)
-            events = data.get("events", [])
-            flat_events = [self.flatten_event(e) for e in events]
-            df = pd.DataFrame(flat_events)
-            if not df.empty:
-                id_map = {event['id']: event for event in events if 'id' in event}
-                df['VisualID'] = df['id'].apply(lambda x: self.find_visual_id(id_map, x))
-                if self.pbi_report_folder:
-                    df['PageName'] = df['VisualID'].map(visualid_to_pagename)
-                else:
+        if query_type == self.QueryType.DAX_STUDIO:
+            for json_path in glob.glob(os.path.join(self.dax_studio_query_folder, r"*.json")):
+                with open(json_path, "r", encoding="utf-8-sig") as f:
+                    data = json.load(f)
+                events = data
+                # id_map = {event['id']: event for event in events if 'id' in event}
+                df = pd.DataFrame(events)
+                if not df.empty:
+                    # df['visualId'] = df['id'].apply(lambda x: self.find_visual_id(id_map, x))
+                    # df = self.add_page_names_to_df(df, self.pbi_report_folder)
+                    df['VisualID'] = ""
                     df['PageName'] = ""
+                    df['RowCount'] = "0"
+                    df['ResultSets'] = 0
 
-                df['ResultSets'] = 0
+                    all_dfs.append(df)
 
-                all_dfs.append(df)
-        if all_dfs:
-            concat_df = pd.concat(all_dfs, ignore_index=True)
-            filtered_df = concat_df[concat_df['name'] == 'Execute DAX Query'].copy()
-            filtered_df.drop_duplicates(inplace=True)
+            if all_dfs:
+                concat_df = pd.concat(all_dfs, ignore_index=True)
+                filtered_df = concat_df[concat_df['QueryType'] == 'DAX'].copy()
+                filtered_df = filtered_df.rename(columns={"RequestID": "ID"})
 
-            # filtered_df = filtered_df.rename(columns={
-            #     "id": "ID", 
-            #     "QueryText": "Query"
-            # })
-            # filtered_df = filtered_df.drop([
-            #     'name', 'component', 'start', 'end', 'sourceLabel', 'status',
-            #     'visualTitle', 'visualType', 'visualId', 'initialLoad', 'parentId'
-            # ], axis=1)
-            # desired_order = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']
-            # filtered_df = filtered_df[desired_order]
+        if query_type == self.QueryType.PERFORMANCE_ANALYZER:
+            if self.pbi_report_folder:
+                visualid_to_pagename = self.build_visualid_to_pagename_map(self.pbi_report_folder)
 
-            filtered_df = filtered_df.rename(columns={"id": "ID", "QueryText": "Query"})
-            desired_order = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']
-            filtered_df = filtered_df[desired_order]
+            for json_path in glob.glob(os.path.join(self.power_bi_perf_analyzer_query_folder, r"*.json")):
+                with open(json_path, "r", encoding="utf-8-sig") as f:
+                    data = json.load(f)
 
-            return filtered_df
-        return pd.DataFrame()
+                events = data.get("events", [])
+                flat_events = [self.flatten_event(e) for e in events]
+                df = pd.DataFrame(flat_events)
+                if not df.empty:
+                    id_map = {event['id']: event for event in events if 'id' in event}
+                    df['VisualID'] = df['id'].apply(lambda x: self.find_visual_id(id_map, x))
 
-    def load_events_DAX_Studio(self):
-        """
-        Load and flatten all events from JSON files in the PBI PA Files folder.
+                    if self.pbi_report_folder:
+                        df['PageName'] = df['VisualID'].map(visualid_to_pagename)
+                    else:
+                        df['PageName'] = ""
 
-        Returns:
-            pd.DataFrame: Combined DataFrame of all events.
-        """
-        all_dfs = []
-        for json_path in glob.glob(os.path.join(self.dax_studio_query_folder, r"*.json")):
-            with open(json_path, "r", encoding="utf-8-sig") as f:
-                data = json.load(f)
-            events = data
-            # id_map = {event['id']: event for event in events if 'id' in event}
-            #flat_events = [self.flatten_event(e) for e in events]
-            df = pd.DataFrame(events)
-            if not df.empty:
-                # df['visualId'] = df['id'].apply(lambda x: self.find_visual_id(id_map, x))
-                # df = self.add_page_names_to_df(df, self.pbi_report_folder)
-                df['VisualID'] = ""
-                df['PageName'] = ""
-                df['RowCount'] = 0
-                df['ResultSets'] = 0
-                all_dfs.append(df)
-        if all_dfs:
-            concat_df = pd.concat(all_dfs, ignore_index=True)
-            filtered_df = concat_df[concat_df['QueryType'] == 'DAX'].copy()
+                    df = df.drop(['RowCount'], axis=1) # Drop the numeric field from the PBI PA file
+                    df['RowCount'] = ""
+                    df['ResultSets'] = 0
+
+                    all_dfs.append(df)
+
+            if all_dfs:
+                concat_df = pd.concat(all_dfs, ignore_index=True)
+                filtered_df = concat_df[concat_df['name'] == 'Execute DAX Query'].copy()
+                filtered_df = filtered_df.rename(columns={"id": "ID", "QueryText": "Query"})
+
+        if filtered_df is not None and not filtered_df.empty:
             filtered_df.drop_duplicates(inplace=True)
 
             # Rename columns and select only the relevant ones for clarity
@@ -363,11 +407,12 @@ class PowerBIRegressionTester:
             # ])
             # filtered_df = filtered_df[['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']]
 
-            filtered_df = filtered_df.rename(columns={"RequestID": "ID"})
+            
             desired_columns = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']
             filtered_df = filtered_df[desired_columns]
 
             return filtered_df
+        
         return pd.DataFrame()
 
     def execute_queries(self, filtered_df):
@@ -390,7 +435,7 @@ class PowerBIRegressionTester:
                 try:
                     with conn.cursor().execute(query_text) as cur:
                         result_set_index = 0
-                        row_count = 0
+                        row_count = ""
                         resultset_hashes = []
                         has_next = True
                         while has_next:
@@ -400,7 +445,10 @@ class PowerBIRegressionTester:
                             if result_rows:
                                 result_df = pd.DataFrame(result_rows, columns=columns)
                                 if not result_df.empty:
-                                    row_count += len(result_df)
+                                    if row_count:
+                                        row_count += f", {len(result_df)}"
+                                    else:
+                                        row_count = str(len(result_df))
                                     result_df['row_hash'] = result_df.apply(self.row_hash, axis=1)
                                     result_df = result_df.sort_values('row_hash').reset_index(drop=True)
                                     row_hashes = '|'.join(result_df['row_hash'].tolist())
@@ -446,6 +494,10 @@ class PowerBIRegressionTester:
             ).any(axis=1)
         )
         value_diffs = comparison_df[diff_mask]
+
+        desired_columns = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']
+        value_diffs = value_diffs[desired_columns]
+        
         return value_diffs
 
     def prepare_df(self):
@@ -478,16 +530,14 @@ class PowerBIRegressionTester:
             any(fname.endswith('.json') for fname in os.listdir(self.dax_studio_query_folder))
         )
 
-        power_bi_perf_analyzer = None
-        dax_studio_df = None
+        power_bi_perf_analyzer = pd.DataFrame()
+        dax_studio_df = pd.DataFrame()
 
         if has_perf_analyzer_files:
-            power_bi_perf_analyzer = self.load_events()
-        
+            power_bi_perf_analyzer = self.load_events(self.QueryType.PERFORMANCE_ANALYZER)
+
         if has_dax_studio_files:
-            dax_studio_df = self.load_events_DAX_Studio()
-        # else:
-        #     final_df = pd.DataFrame()
+            dax_studio_df = self.load_events(self.QueryType.DAX_STUDIO)
 
         combined_df = pd.concat([dax_studio_df, power_bi_perf_analyzer], ignore_index=True)
 
@@ -495,19 +545,12 @@ class PowerBIRegressionTester:
             combined_df['Query'] = combined_df['Query'].apply(normalize_line_endings)
         # final_df['QueryHash'] = final_df['Query'].apply(lambda x: hashlib.sha256(str(x).encode('utf-8')).hexdigest())
 
-        # pd.set_option('display.max_columns', None)
-        # pd.set_option('display.max_rows', 20)
-
         combined_df = self.execute_queries(combined_df)
-        all_hashes = combined_df['CombinedQueryHash'].dropna().astype(str).tolist()
+        all_hashes = sorted(combined_df['CombinedQueryHash'].dropna().astype(str).tolist())
         combined = '|'.join(all_hashes)
         final_overall_hash = hashlib.sha256(combined.encode('utf-8')).hexdigest()
         combined_df['FinalOverallHash'] = final_overall_hash
-        # filtered_df = self.add_page_names_to_df(filtered_df, self.pbi_report_folder)
-        # filtered_df = filtered_df[
-        #     ['id', 'parentId', 'visualId', 'QueryText', 'RowCount', 'ResultSets',
-        #      'CombinedQueryHash', 'final_overall_hash', 'pageName']
-        # ]
+
         return combined_df
 
 
