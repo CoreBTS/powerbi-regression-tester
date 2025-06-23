@@ -75,6 +75,15 @@ class Cursor:
                     ))
         return self
 
+    def executenonquery(self, query:str):
+        """
+        Executes a query against the data source
+
+        :params [query]: The query to be executed
+        """
+        self._cmd = AdomdCommand(query, self._conn)
+        self._cmd.ExecuteNonQuery()
+
     def fetchone(self) -> Iterator[Tuple[T, ...]]:
         """
         Fetches the current line from the last executed query
