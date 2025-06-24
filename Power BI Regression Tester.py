@@ -1,12 +1,59 @@
-
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from PowerBIRegressionTester import PowerBIRegressionTester
 from tabulate import tabulate
 import os
 import json
+import shutil
 
-CONFIG_FILE = os.path.expanduser("~/.pbi_regression_tester_gui3.json")
+CONFIG_FILE = os.path.expanduser("~/.pbi_regression_tester_gui4.json")
+
+
+def delete_current_instance():
+    instance_name = instance_dropdown.get().strip()
+    if not instance_name:
+        messagebox.showerror("Error", "No instance selected to delete.")
+        return
+    project_path = os.path.join(os.getcwd(), project_folder_var.get())
+    instance_base = os.path.join(project_path, "instance")
+    instance_path = os.path.join(instance_base, instance_name)
+    if not os.path.isdir(instance_path):
+        messagebox.showerror("Error", f"Instance folder '{instance_name}' does not exist.")
+        return
+    if messagebox.askyesno("Delete Instance", f"Are you sure you want to delete instance '{instance_name}'? This cannot be undone."):
+        try:
+            shutil.rmtree(instance_path)
+            update_instance_dropdown()
+            instance_dropdown.set("")
+            messagebox.showinfo("Deleted", f"Instance '{instance_name}' deleted.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to delete instance: {e}")
+
+def update_instance_dropdown():
+    """Populate the instance dropdown with subfolder names from the project folder."""
+    project_path = os.path.join(os.getcwd(), project_folder_var.get())
+    instance_base = os.path.join(project_path, "instance")
+    instance_names = []
+    if os.path.isdir(instance_base):
+        instance_names = [name for name in os.listdir(instance_base)
+                          if os.path.isdir(os.path.join(instance_base, name))]
+    instance_dropdown['values'] = instance_names
+    if instance_names:
+        instance_dropdown.current(0)
+    else:
+        instance_dropdown.set("")
+        
+def on_project_folder_change(*args):
+    update_instance_dropdown()
+
+def save_current_instance():
+    name = instance_dropdown.get().strip()
+    if name and name not in instance_dropdown['values']:
+        # Add new instance name to dropdown
+        values = list(instance_dropdown['values'])
+        values.append(name)
+        instance_dropdown['values'] = values
+        instance_dropdown.set(name)
 
 def save_all_configs():
     with open(CONFIG_FILE, "w") as f:
@@ -31,7 +78,14 @@ def load_config_to_fields(name):
     project_folder_var.set(config.get("project_folder", ""))
     connection_string_var.set(config.get("connection_string", ""))
     pbi_report_folder_var.set(config.get("pbi_report_folder", ""))
-    instance_name_var.set(config.get("instance_name", ""))
+    update_instance_dropdown()
+    # Set the instance dropdown value from config
+    instance_names = list(instance_dropdown['values'])
+    instance_name = config.get("instance_name", "")
+    if instance_name and instance_name not in instance_names:
+        instance_names.append(instance_name)
+        instance_dropdown['values'] = instance_names
+    instance_dropdown.set(instance_name)
 
 def on_config_select(event=None):
     name = config_dropdown.get()
@@ -49,8 +103,7 @@ def save_current_config():
         "project_folder": project_folder_var.get(),
         "connection_string": connection_string_var.get(),
         "pbi_report_folder": pbi_report_folder_var.get(),
-        "instance_name": instance_name_var.get()
-    }
+        "instance_name": instance_dropdown.get().strip()}
     save_all_configs()
     update_config_dropdown()
     config_dropdown.set(name)
@@ -72,7 +125,8 @@ def delete_current_config():
                 project_folder_var.set("")
                 connection_string_var.set("")
                 pbi_report_folder_var.set("")
-                instance_name_var.set("")
+                instance_dropdown.set("")
+                instance_dropdown['values'] = []
             messagebox.showinfo("Deleted", f"Configuration '{name}' deleted.")
 
 def on_closing():
@@ -94,8 +148,7 @@ def save_config():
         "project_folder": project_folder_var.get(),
         "connection_string": connection_string_var.get(),
         "pbi_report_folder": pbi_report_folder_var.get(),
-        "instance_name": instance_name_var.get()
-    }
+        "instance_name": instance_dropdown.get().strip()}
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f)
 
@@ -106,7 +159,19 @@ def load_config():
             project_folder_var.set(config.get("project_folder", ""))
             connection_string_var.set(config.get("connection_string", ""))
             pbi_report_folder_var.set(config.get("pbi_report_folder", ""))
-            instance_name_var.set(config.get("instance_name", ""))
+            # Load instance dropdown from folders
+            project_path = os.path.join(os.getcwd(), project_folder_var.get())
+            instance_base = os.path.join(project_path, "instance")
+            instance_names = []
+            if os.path.isdir(instance_base):
+                instance_names = [name for name in os.listdir(instance_base)
+                                  if os.path.isdir(os.path.join(instance_base, name))]
+            instance_dropdown['values'] = instance_names
+            instance_name = config.get("instance_name", "")
+            if instance_name and instance_name not in instance_names:
+                instance_names.append(instance_name)
+                instance_dropdown['values'] = instance_names
+            instance_dropdown.set(instance_name)
 
 def run_baseline():
     tester = PowerBIRegressionTester(
@@ -121,7 +186,7 @@ def run_baseline():
     show_result(df)
 
 def run_instance():
-    instance_name = instance_name_var.get().strip()
+    instance_name = instance_dropdown.get().strip()
     if not instance_name:
         messagebox.showerror("Error", "Instance name required.")
         return
@@ -134,16 +199,17 @@ def run_instance():
         if not messagebox.askyesno("Overwrite?", f"Instance '{instance_name}' exists. Overwrite?"):
             return
     df = tester.run_instance(instance_name)
+    save_current_instance()
     show_result(df)
 
 def run_compare():
     project_folder = project_folder_var.get()
-    instance_name = instance_name_var.get().strip()
+    instance_name = instance_dropdown.get().strip()
     if not instance_name:
         instance_name = simpledialog.askstring("Instance Name", "Enter an instance name to compare:")
         if not instance_name:
             return
-        instance_name_var.set(instance_name)
+        instance_dropdown.set(instance_name)
     tester = PowerBIRegressionTester.for_compare_only(project_folder)
     if tester.instance_exists(instance_name):
         df = tester.compare(instance_name)
@@ -256,7 +322,14 @@ configs = load_all_configs()
 project_folder_var = tk.StringVar()
 connection_string_var = tk.StringVar()
 pbi_report_folder_var = tk.StringVar()
-instance_name_var = tk.StringVar()
+
+# instance_name_var = tk.StringVar()
+instance_dropdown = ttk.Combobox(root, width=40, state="normal")
+instance_dropdown.grid(row=4, column=1, padx=5, pady=2)  # Use the correct row index
+tk.Button(root, text="Delete", command=delete_current_instance, fg="red").grid(row=4, column=2, padx=2)
+
+# Whenever the project folder changes, update the instance dropdown:
+project_folder_var.trace_add("write", on_project_folder_change)
 
 # Config dropdown
 tk.Label(root, text="Configuration:").grid(row=0, column=0, sticky='e')
@@ -271,15 +344,18 @@ fields = [
     ("Project Folder", project_folder_var),
     ("Connection String", connection_string_var),
     ("PBI Report Folder (optional)", pbi_report_folder_var),
-    ("Instance Name (for instance only)", instance_name_var)
+    ("Instance Name (for instance only)", None)
 ]
 
-for i, (label, var) in enumerate(fields, start=1):  # <-- start=1
+for i, (label, var) in enumerate(fields, start=1):
     tk.Label(root, text=label).grid(row=i, column=0, sticky='e')
-    entry = tk.Entry(root, textvariable=var, width=60)
-    entry.grid(row=i, column=1, padx=5, pady=2)
-    if "Folder" in label:
-        tk.Button(root, text="Browse", command=lambda v=var: browse_folder(v)).grid(row=i, column=2)
+    if label.startswith("Instance Name"):
+        instance_dropdown.grid(row=i, column=1, padx=5, pady=2)
+    else:
+        entry = tk.Entry(root, textvariable=var, width=60)
+        entry.grid(row=i, column=1, padx=5, pady=2)
+        if "Folder" in label:
+            tk.Button(root, text="Browse", command=lambda v=var: browse_folder(v)).grid(row=i, column=2)
 
 tk.Button(root, text="Create Baseline", command=run_baseline, bg="lightblue").grid(row=len(fields)+1, column=0, pady=10)
 tk.Button(root, text="Create Instance", command=run_instance, bg="lightgreen").grid(row=len(fields)+1, column=1, pady=10)
