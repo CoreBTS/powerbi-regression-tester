@@ -21,24 +21,24 @@ class PowerBIRegressionTesterApp:
 
         # Widgets
         self.setup_widgets()
-        self.update_config_dropdown()
-        if self.config_dropdown['values']:
-            self.load_config_to_fields(self.config_dropdown.get())
+        self.update_project_folder_dropdown()
+        if self.project_folder_dropdown['values']:
+            self.load_config_to_fields(self.project_folder_dropdown.get())
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def setup_widgets(self):
         # Config dropdown
-        tk.Label(self.root, text="Configuration:").grid(row=0, column=0, sticky='e')
-        self.config_dropdown = ttk.Combobox(self.root, width=40, state="normal")
-        self.config_dropdown.grid(row=0, column=1, padx=5, pady=2)
-        self.config_dropdown.bind("<<ComboboxSelected>>", self.on_config_select)
-        tk.Button(self.root, text="Save", command=self.save_current_config).grid(row=0, column=2, padx=2)
-        tk.Button(self.root, text="Delete", command=self.delete_current_config).grid(row=0, column=3, padx=2)
+        tk.Label(self.root, text="Project Folder:").grid(row=0, column=0, sticky='e')
+        self.project_folder_dropdown = ttk.Combobox(self.root, textvariable=self.project_folder_var, width=40, state="readonly")
+        self.project_folder_dropdown.grid(row=0, column=1, padx=5, pady=2, sticky='w')
+        self.project_folder_dropdown.bind("<<ComboboxSelected>>", self.on_project_folder_select)
+        tk.Button(self.root, text="Save", command=self.save_current_config).grid(row=0, column=2, padx=2, sticky='w')
+        tk.Button(self.root, text="Delete", command=self.delete_current_config).grid(row=0, column=3, padx=2, sticky='w')
+        tk.Button(self.root, text="New", command=self.create_new_config).grid(row=0, column=4, padx=2, sticky='w')
 
         # Fields
         fields = [
-            ("Project Folder", self.project_folder_var),
             ("Connection String", self.connection_string_var),
             ("PBI Report Folder (optional)", self.pbi_report_folder_var),
             ("Instance Name (for instance only)", None)
@@ -46,19 +46,28 @@ class PowerBIRegressionTesterApp:
         for i, (label, var) in enumerate(fields, start=1):
             tk.Label(self.root, text=label).grid(row=i, column=0, sticky='e')
             if label.startswith("Instance Name"):
-                self.instance_dropdown = ttk.Combobox(self.root, textvariable=self.instance_name_var, width=40, state="normal")
-                self.instance_dropdown.grid(row=i, column=1, padx=5, pady=2)
-                tk.Button(self.root, text="Delete", command=self.delete_current_instance, fg="red").grid(row=i, column=2, padx=2)
+                self.instance_dropdown = ttk.Combobox(self.root, textvariable=self.instance_name_var, width=40, state="readonly")
+                self.instance_dropdown.grid(row=i, column=1, padx=5, pady=2, sticky='w')
+                tk.Button(self.root, text="Delete", command=self.delete_current_instance, fg="red").grid(row=i, column=2, padx=2, sticky='w')
+                # tk.Button(self.root, text="View Instance", command=self.view_instance, bg="white").grid(row=len(fields)+1, column=3, pady=10, sticky='w')
+                # tk.Button(self.root, text="Create Instance", command=self.run_instance, bg="lightgreen").grid(row=i, column=3, padx=2, sticky='w')
+                tk.Button(self.root, text="View Instance", command=self.view_instance, bg="white").grid(row=i, column=3, padx=2, sticky='w')
+                tk.Button(self.root, text="Create Instance", command=self.run_instance, bg="lightgreen").grid(row=i, column=4, padx=2, sticky='w')
             else:
                 entry = tk.Entry(self.root, textvariable=var, width=60)
                 entry.grid(row=i, column=1, padx=5, pady=2)
                 if "Folder" in label:
-                    tk.Button(self.root, text="Browse", command=lambda v=var: self.browse_folder(v)).grid(row=i, column=2)
+                    tk.Button(self.root, text="Browse", command=lambda v=var: self.browse_folder(v)).grid(row=i, column=2, sticky='w')
+
+        # Action buttons
+        # tk.Button(self.root, text="Create Baseline", command=self.run_baseline, bg="lightblue").grid(row=len(fields)+1, column=0, pady=10)
+        # # tk.Button(self.root, text="Create Instance", command=self.run_instance, bg="lightgreen").grid(row=len(fields)+1, column=1, pady=10)
+        # tk.Button(self.root, text="Compare", command=self.run_compare, bg="orange").grid(row=len(fields)+1, column=2, pady=10)
 
         # Action buttons
         tk.Button(self.root, text="Create Baseline", command=self.run_baseline, bg="lightblue").grid(row=len(fields)+1, column=0, pady=10)
-        tk.Button(self.root, text="Create Instance", command=self.run_instance, bg="lightgreen").grid(row=len(fields)+1, column=1, pady=10)
-        tk.Button(self.root, text="Compare", command=self.run_compare, bg="orange").grid(row=len(fields)+1, column=2, pady=10)
+        tk.Button(self.root, text="View Baseline", command=self.view_baseline, bg="white").grid(row=len(fields)+1, column=1, pady=10, sticky='w')
+        tk.Button(self.root, text="Compare", command=self.run_compare, bg="orange").grid(row=len(fields)+1, column=3, pady=10, sticky='w')
 
         self.project_folder_var.trace_add("write", lambda *args: self.update_instance_dropdown())
 
@@ -89,9 +98,36 @@ class PowerBIRegressionTesterApp:
         else:
             self.config_dropdown.set("")
 
-    def load_config_to_fields(self, name):
-        config = self.configs.get(name, {})
-        self.project_folder_var.set(config.get("project_folder", ""))
+    def update_project_folder_dropdown(self):
+        project_folders = list(self.configs.keys())
+        self.project_folder_dropdown['values'] = project_folders
+        if project_folders:
+            self.project_folder_dropdown.current(0)
+        else:
+            self.project_folder_dropdown.set("")
+
+    def create_new_config(self):
+        new_name = simpledialog.askstring("New Project Folder", "Enter a name for the new project folder:")
+        if not new_name:
+            return
+        if new_name in self.configs:
+            messagebox.showerror("Error", f"Project folder '{new_name}' already exists.")
+            return
+        # Add new config with empty/default values
+        self.configs[new_name] = {
+            "connection_string": "",
+            "pbi_report_folder": "",
+            "instance_name": ""
+        }
+        self.save_all_configs()
+        PowerBIRegressionTester.create_project_skeleton(new_name)
+        self.update_project_folder_dropdown()
+        self.project_folder_dropdown.set(new_name)
+        self.load_config_to_fields(new_name)
+
+    def load_config_to_fields(self, project_folder):
+        config = self.configs.get(project_folder, {})
+        self.project_folder_var.set(project_folder)
         self.connection_string_var.set(config.get("connection_string", ""))
         self.pbi_report_folder_var.set(config.get("pbi_report_folder", ""))
         self.update_instance_dropdown()
@@ -103,32 +139,36 @@ class PowerBIRegressionTesterApp:
         if name in self.configs:
             self.load_config_to_fields(name)
 
+    def on_project_folder_select(self, event=None):
+        project_folder = self.project_folder_var.get()
+        if project_folder in self.configs:
+            self.load_config_to_fields(project_folder)
+    
     def save_current_config(self):
-        name = self.config_dropdown.get().strip()
-        if not name:
-            name = simpledialog.askstring("Config Name", "Enter a name for this configuration:")
-            if not name:
+        project_folder = self.project_folder_var.get().strip()
+        if not project_folder:
+            project_folder = simpledialog.askstring("Config Name", "Enter a name for this configuration:")
+            if not project_folder:
                 return
-            self.config_dropdown.set(name)
-        self.configs[name] = {
-            "project_folder": self.project_folder_var.get(),
+            self.project_folder_dropdown.set(project_folder)
+        self.configs[project_folder] = {
             "connection_string": self.connection_string_var.get(),
             "pbi_report_folder": self.pbi_report_folder_var.get(),
             "instance_name": self.instance_dropdown.get().strip()}
         self.save_all_configs()
-        self.update_config_dropdown()
-        self.config_dropdown.set(name)
-        PowerBIRegressionTester.create_project_skeleton(name)
-        messagebox.showinfo("Saved", f"Configuration '{name}' saved.")
+        self.update_project_folder_dropdown()
+        self.project_folder_dropdown.set(project_folder)
+        PowerBIRegressionTester.create_project_skeleton(project_folder)
+        messagebox.showinfo("Saved", f"Configuration '{project_folder}' saved.")
 
     def delete_current_config(self):
-        name = self.config_dropdown.get()
-        if name in self.configs:
-            if messagebox.askyesno("Delete", f"Delete configuration '{name}'?"):
-                del self.configs[name]
+        project_folder = self.project_folder_dropdown.get()
+        if project_folder in self.configs:
+            if messagebox.askyesno("Delete", f"Delete configuration '{project_folder}'?"):
+                del self.configs[project_folder]
                 self.save_all_configs()
-                self.update_config_dropdown()
-                current = self.config_dropdown.get()
+                self.update_project_folder_dropdown()
+                current = self.update_project_folder_dropdown.get()
                 if current in self.configs:
                     self.load_config_to_fields(current)
                 else:
@@ -137,7 +177,7 @@ class PowerBIRegressionTesterApp:
                     self.pbi_report_folder_var.set("")
                     self.instance_dropdown.set("")
                     self.instance_dropdown['values'] = []
-                messagebox.showinfo("Deleted", f"Configuration '{name}' deleted.")
+                messagebox.showinfo("Deleted", f"Configuration '{project_folder}' deleted.")
 
     def delete_current_instance(self):
         instance_name = self.instance_dropdown.get().strip()
@@ -271,12 +311,42 @@ class PowerBIRegressionTesterApp:
 
             tree.bind("<Double-1>", on_double_click)
     
-    def run_baseline(self):
+    def view_baseline(self):
         tester = PowerBIRegressionTester(
             self.project_folder_var.get(),
             self.connection_string_var.get(),
             self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
         )
+        if not tester.baseline_exists():
+            messagebox.showerror("Error", "No baseline exists for this project.")
+            return
+        df = tester.load_baseline_df()
+        self.show_result(df)
+
+    def view_instance(self):
+        instance_name = self.instance_dropdown.get().strip()
+        if not instance_name:
+            messagebox.showerror("Error", "No instance selected.")
+            return
+        # tester = PowerBIRegressionTester(
+        #     self.project_folder_var.get(),
+        #     self.connection_string_var.get(),
+        #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
+        # )
+        tester = PowerBIRegressionTester.for_compare_only(self.project_folder_var.get())
+        if not tester.instance_exists(instance_name):
+            messagebox.showerror("Error", f"Instance '{instance_name}' does not exist.")
+            return
+        df = tester.load_instance_df(instance_name)
+        self.show_result(df)
+        
+    def run_baseline(self):
+        # tester = PowerBIRegressionTester(
+        #     self.project_folder_var.get(),
+        #     self.connection_string_var.get(),
+        #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
+        # )
+        tester = PowerBIRegressionTester.for_compare_only(self.project_folder_var.get())
         if tester.baseline_exists():
             if not messagebox.askyesno("Overwrite?", "Baseline exists. Overwrite?"):
                 return
@@ -284,10 +354,17 @@ class PowerBIRegressionTesterApp:
         self.show_result(df)
 
     def run_instance(self):
-        instance_name = self.instance_dropdown.get().strip()
+        # instance_name = self.instance_dropdown.get().strip()
+        # if not instance_name:
+        #     messagebox.showerror("Error", "Instance name required.")
+        #     return
+        
+        # Prompt for new instance name if none selected
+        instance_name = simpledialog.askstring("New Instance Name", "Enter a name for the new instance:")
         if not instance_name:
-            messagebox.showerror("Error", "Instance name required.")
             return
+        self.instance_dropdown.set(instance_name)
+
         tester = PowerBIRegressionTester(
             self.project_folder_var.get(),
             self.connection_string_var.get(),
@@ -317,7 +394,6 @@ class PowerBIRegressionTesterApp:
                 messagebox.showinfo("Compare", "No differences found or comparison failed.")
         else:
             messagebox.showerror("Error", f"The instance '{instance_name}' does not exist.")
-
 
 if __name__ == "__main__":
     root = tk.Tk()

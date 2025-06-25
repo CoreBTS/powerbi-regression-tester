@@ -92,12 +92,12 @@ class PowerBIRegressionTester:
         obj = cls.__new__(cls)
         obj.project_folder = project_folder
         obj.working_directory = os.getcwd()
-        obj.project_folder = os.path.join(obj.working_directory, project_folder)
+        obj.project_folder = os.path.join(obj.working_directory, obj.PROJECT_FOLDER_BASE, project_folder)
         # obj.pbi_pa_folder = os.path.join(obj.project_folder, cls.QUERIES_FOLDER)
         obj.baseline_folder = os.path.join(obj.project_folder, cls.BASELINE_FOLDER_NAME)
         obj.baseline_csv_file = os.path.join(obj.baseline_folder, cls.BASELINE_CSV_FILE)
         obj.baseline_parquet_file = os.path.join(obj.baseline_folder, cls.BASELINE_PARQUET_FILE)
-        obj.instance_folder_base = os.path.join(obj.project_folder, "instance")
+        obj.instance_folder_base = os.path.join(obj.project_folder, cls.INSTANCE_FOLDER_NAME)
         obj.connection_string = None  # Not needed for compare-only
 
         # obj.query_type = query_type
@@ -544,7 +544,7 @@ class PowerBIRegressionTester:
         combined_df = pd.concat([dax_studio_df, power_bi_perf_analyzer], ignore_index=True)
 
         if not combined_df.empty and 'Query' in combined_df.columns:
-            combined_df['Query'] = combined_df['Query'].apply(normalize_line_endings)
+            combined_df['Query'] = combined_df['Query'].apply(self.normalize_line_endings)
         # final_df['QueryHash'] = final_df['Query'].apply(lambda x: hashlib.sha256(str(x).encode('utf-8')).hexdigest())
 
         combined_df = self.execute_queries(combined_df)
@@ -676,10 +676,24 @@ class PowerBIRegressionTester:
         # value_diffs = self.add_page_names_to_df(value_diffs, self.pbi_report_folder)
         # return value_diffs
 
-    def normalize_line_endings(text: str) -> str:
+    def load_baseline_df(self):
+        """Load the baseline DataFrame from the parquet file."""
+        if os.path.isfile(self.baseline_parquet_file):
+            return pd.read_parquet(self.baseline_parquet_file)
+        return pd.DataFrame()
+
+    def load_instance_df(self, instance_name):
+        """Load the instance DataFrame from the parquet file."""
+        instance_folder = os.path.join(self.instance_folder_base, instance_name)
+        instance_parquet_file = os.path.join(instance_folder, f"{instance_name}.parquet")
+        if os.path.isfile(instance_parquet_file):
+            return pd.read_parquet(instance_parquet_file)
+        return pd.DataFrame()
+
+    def normalize_line_endings(self, text: str) -> str:
         return text.replace('\r\n', '\n').replace('\r', '\n')
 
-    def normalize_to_crlf(s):
+    def normalize_to_crlf(self, s):
         if pd.isna(s):
             return s
         return s.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
