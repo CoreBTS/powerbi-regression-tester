@@ -69,8 +69,8 @@ class PowerBIRegressionTesterApp:
             var.set(folder)
 
     def update_instance_dropdown(self):
-        project_path = os.path.join(os.getcwd(), self.project_folder_var.get())
-        instance_base = os.path.join(project_path, "instance")
+        instance_base = os.path.join(os.getcwd(), PowerBIRegressionTester.PROJECT_FOLDER_BASE, self.project_folder_var.get(), PowerBIRegressionTester.INSTANCE_FOLDER_NAME)
+        # instance_base = os.path.join(project_path)
         instance_names = []
         if os.path.isdir(instance_base):
             instance_names = [name for name in os.listdir(instance_base)
@@ -118,6 +118,7 @@ class PowerBIRegressionTesterApp:
         self.save_all_configs()
         self.update_config_dropdown()
         self.config_dropdown.set(name)
+        PowerBIRegressionTester.create_project_skeleton(name)
         messagebox.showinfo("Saved", f"Configuration '{name}' saved.")
 
     def delete_current_config(self):

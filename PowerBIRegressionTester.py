@@ -19,6 +19,7 @@ class PowerBIRegressionTester:
     PROJECT_FOLDER_BASE = "Projects"
     QUERIES_BASE_FOLDER = "Query Files"
     BASELINE_FOLDER_NAME = "baseline"
+    INSTANCE_FOLDER_NAME = "instance"
     BASELINE_CSV_FILE = "baseline.csv"
     BASELINE_PARQUET_FILE = "baseline.parquet"
     DAX_STUDIO_QUERY_FOLDER_NAME = "DAX Studio"
@@ -51,7 +52,7 @@ class PowerBIRegressionTester:
         self.baseline_folder = os.path.join(self.project_folder, self.BASELINE_FOLDER_NAME)
         self.baseline_csv_file = os.path.join(self.baseline_folder, self.BASELINE_CSV_FILE)
         self.baseline_parquet_file = os.path.join(self.baseline_folder, self.BASELINE_PARQUET_FILE)
-        self.instance_folder_base = os.path.join(self.project_folder, "instance")
+        self.instance_folder_base = os.path.join(self.project_folder, self.INSTANCE_FOLDER_NAME)
         # self.query_type = query_type
 
         # self.query_subfolder = None
@@ -675,10 +676,36 @@ class PowerBIRegressionTester:
         # value_diffs = self.add_page_names_to_df(value_diffs, self.pbi_report_folder)
         # return value_diffs
 
-def normalize_line_endings(text: str) -> str:
-    return text.replace('\r\n', '\n').replace('\r', '\n')
+    def normalize_line_endings(text: str) -> str:
+        return text.replace('\r\n', '\n').replace('\r', '\n')
 
-def normalize_to_crlf(s):
-    if pd.isna(s):
-        return s
-    return s.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
+    def normalize_to_crlf(s):
+        if pd.isna(s):
+            return s
+        return s.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
+
+    @staticmethod
+    def create_project_skeleton(project_name):
+        """
+        Create a skeleton folder structure for a new Power BI regression test project.
+
+        Structure:
+        Projects/
+            <project_name>/
+                baseline/
+                instance/
+                Query Files/
+                    DAX Studio/
+                    PBI Performance Analyzer/
+        """
+        base_dir = os.path.join(os.getcwd(), "Projects", project_name)
+        folders = [
+            base_dir,
+            os.path.join(base_dir, "baseline"),
+            os.path.join(base_dir, "instance"),
+            os.path.join(base_dir, "Query Files"),
+            os.path.join(base_dir, "Query Files", "DAX Studio"),
+            os.path.join(base_dir, "Query Files", "PBI Performance Analyzer"),
+        ]
+        for folder in folders:
+            os.makedirs(folder, exist_ok=True)
