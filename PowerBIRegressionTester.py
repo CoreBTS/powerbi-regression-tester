@@ -16,6 +16,7 @@ class PowerBIRegressionTester:
     and comparison, as well as mapping visuals to their page names.
     """
 
+    PROJECT_FOLDER_BASE = "Projects"
     QUERIES_BASE_FOLDER = "Query Files"
     BASELINE_FOLDER_NAME = "baseline"
     BASELINE_CSV_FILE = "baseline.csv"
@@ -44,7 +45,7 @@ class PowerBIRegressionTester:
         # self.connection_string = f"Provider=MSOLAP;Data Source={server};Initial Catalog={model}"
         self.connection_string = connection_string
         self.pbi_report_folder = pbi_report_folder
-        self.project_folder = os.path.join(self.working_directory, project_folder)
+        self.project_folder = os.path.join(self.working_directory, self.PROJECT_FOLDER_BASE, project_folder)
         # self.pbi_pa_folder = os.path.join(self.project_folder, self.QUERIES_BASE_FOLDER)
         
         self.baseline_folder = os.path.join(self.project_folder, self.BASELINE_FOLDER_NAME)
