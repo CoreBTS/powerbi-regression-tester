@@ -6,7 +6,7 @@ import os
 import json
 import shutil
 
-CONFIG_FILE = os.path.expanduser("~/.pbi_regression_tester_gui4.json")
+CONFIG_FILE = os.path.expanduser("~/.pbi_regression_tester_gui5.json")
 
 
 def delete_current_instance():
@@ -137,11 +137,6 @@ def browse_folder(var):
     folder = filedialog.askdirectory()
     if folder:
         var.set(folder)
-
-# Save config on exit
-def on_closing():
-    save_config()
-    root.destroy()
 
 def save_config():
     config = {
