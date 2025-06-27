@@ -67,7 +67,8 @@ class Cursor:
         self._cmd = AdomdCommand(query, self._conn)
         self._reader = self._cmd.ExecuteReader()
         self._field_count = self._reader.FieldCount
-        
+
+        self._description = []        
         for i in range(self._field_count):
             self._description.append(Description(
                     self._reader.GetName(i), 
@@ -91,7 +92,7 @@ class Cursor:
         self._row_count = 0
 
         while(self._reader.Read()):
-            yield tuple(convert(self._reader.GetFieldType(i).ToString(), self._reader[i], adomd_type_map) for i in range(self._field_count))
+            yield tuple(convert(self._reader.GetFieldType(i).ToString(), self._reader[i], adomd_type_map) for i in range(self._reader.FieldCount))
 
     def fetchmany(self, size=1) -> List[Tuple[T, ...]]:
         """
@@ -106,7 +107,15 @@ class Cursor:
                 l.append(next(self.fetchone()))
         except StopIteration:
             pass
-        
+
+        self._field_count = self._reader.FieldCount
+        self._description = []
+        for i in range(self._reader.FieldCount):
+            self._description.append(Description(
+            self._reader.GetName(i), 
+            adomd_type_map[self._reader.GetFieldType(i).ToString()].type_name
+            ))
+
         return l
 
     def fetchall(self) -> List[Tuple[T, ...]]:
@@ -116,9 +125,17 @@ class Cursor:
         # mypy issues with list comprehension :-( 
         _last_results = [i for i in self.fetchone()]
         self._row_count = len(_last_results)
+                
+        self._field_count = self._reader.FieldCount
+        self._description = []
+        for i in range(self._field_count):
+            self._description.append(Description(
+            self._reader.GetName(i), 
+            adomd_type_map[self._reader.GetFieldType(i).ToString()].type_name
+            ))
 
         return _last_results # type: ignore
-
+    
     def nextresult(self) -> bool:
         """
         Moves to the next result set in the current query

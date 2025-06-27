@@ -7,7 +7,6 @@ import hashlib
 import pandas as pd
 import importlib.util
 from enum import Enum
-from tabulate import tabulate
 
 class PowerBIRegressionTester:
     """
@@ -442,9 +441,15 @@ class PowerBIRegressionTester:
                         has_next = True
                         while has_next:
                             result_set_index += 1
-                            columns = [col[0] for col in cur.description]
-                            result_rows = cur.fetchall()
+                            # columns = [col[0] for col in cur.description]
+                            try:
+                                result_rows = cur.fetchall()
+                            except Exception as e:
+                                print(f"Error fetching results for query {query_id}: {e}")
+                                result_rows = []
+
                             if result_rows:
+                                columns = [col[0] for col in cur.description]
                                 result_df = pd.DataFrame(result_rows, columns=columns)
                                 if not result_df.empty:
                                     if row_count:
