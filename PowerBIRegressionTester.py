@@ -93,7 +93,7 @@ class PowerBIRegressionTester:
         obj.project_folder = project_folder
         obj.working_directory = os.getcwd()
         obj.project_folder = os.path.join(obj.working_directory, obj.PROJECT_FOLDER_BASE, project_folder)
-        # obj.pbi_pa_folder = os.path.join(obj.project_folder, cls.QUERIES_FOLDER)
+        obj.pbi_report_folder = ""
         obj.baseline_folder = os.path.join(obj.project_folder, cls.BASELINE_FOLDER_NAME)
         obj.baseline_csv_file = os.path.join(obj.baseline_folder, cls.BASELINE_CSV_FILE)
         obj.baseline_parquet_file = os.path.join(obj.baseline_folder, cls.BASELINE_PARQUET_FILE)
@@ -470,7 +470,7 @@ class PowerBIRegressionTester:
                     print(f"Error executing query {query_id}: {e}\n")
         return filtered_df
 
-    def compare_with_baseline(self, filtered_df):
+    def compare_with_baseline(self, instance):
         """
         Compare the current run's DataFrame with the baseline, returning only differing rows.
 
@@ -481,13 +481,66 @@ class PowerBIRegressionTester:
         Returns:
             pd.DataFrame: DataFrame of value differences, with page names added.
         """
+
+        if isinstance(instance, pd.DataFrame):
+            instance_df = instance
+        if isinstance(instance, str):
+            if not self.instance_exists(instance):
+                print(f"Instance '{instance}' does not exist. Please run the instance first.")
+                sys.exit(1)
+
+            instance_one_folder = os.path.join(self.instance_folder_base, instance)
+            instance_one_parquet_file = os.path.join(instance_one_folder, f"{instance}.parquet")
+            instance_df = pd.read_parquet(instance_one_parquet_file)
+
         baseline_exists = os.path.isfile(self.baseline_parquet_file)
         if not baseline_exists:
             print("Baseline file does not exist. Please create a baseline first.")
             sys.exit(1)
         baseline_df = pd.read_parquet(self.baseline_parquet_file)
-        comparison_df = filtered_df.merge(
-            baseline_df, on='ID', suffixes=('', '_baseline'), how='outer', indicator=True
+
+        value_diffs = self.compare_internal(baseline_df, instance_df)
+
+        # comparison_df = filtered_df.merge(
+        #     baseline_df, on='ID', suffixes=('', '_baseline'), how='outer', indicator=True
+        # )
+        # cols_to_compare = ['CombinedQueryHash']
+        # diff_mask = (comparison_df['_merge'] == 'both') & (
+        #     comparison_df[[col for col in cols_to_compare]].ne(
+        #         comparison_df[[f"{col}_baseline" for col in cols_to_compare]].values
+        #     ).any(axis=1)
+        # )
+        # value_diffs = comparison_df[diff_mask]
+
+        # desired_columns = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']
+        # value_diffs = value_diffs[desired_columns]
+        
+        return value_diffs
+    
+    def compare_instances(self, instance_one, instance_two):
+        if not self.instance_exists(instance_one):
+            print(f"Instance '{instance_one}' does not exist. Please run the instance first.")
+            sys.exit(1)
+
+        instance_one_folder = os.path.join(self.instance_folder_base, instance_one)
+        instance_one_parquet_file = os.path.join(instance_one_folder, f"{instance_one}.parquet")
+        instance_one_df = pd.read_parquet(instance_one_parquet_file)
+
+        if not self.instance_exists(instance_one):
+            print(f"Instance '{instance_one}' does not exist. Please run the instance first.")
+            sys.exit(1)
+
+        instance_two_folder = os.path.join(self.instance_folder_base, instance_two)
+        instance_two_parquet_file = os.path.join(instance_two_folder, f"{instance_two}.parquet")
+        instance_two_df = pd.read_parquet(instance_two_parquet_file)
+
+        value_diffs = self.compare_internal(instance_one_df, instance_two_df)
+        
+        return value_diffs
+    
+    def compare_internal(self, instance_one_df, instance_two_df):
+        comparison_df = instance_one_df.merge(
+            instance_two_df, on='ID', suffixes=('', '_baseline'), how='outer', indicator=True
         )
         cols_to_compare = ['CombinedQueryHash']
         diff_mask = (comparison_df['_merge'] == 'both') & (
@@ -642,19 +695,21 @@ class PowerBIRegressionTester:
         Returns:
             pd.DataFrame: DataFrame of value differences, with page names added.
         """
-        # Load baseline and instance DataFrames
-        if not self.baseline_exists():
-            print("Baseline file does not exist. Please create a baseline first.")
-            sys.exit(1)
-        if not self.instance_exists(instance_name):
-            print(f"Instance '{instance_name}' does not exist. Please run the instance first.")
-            sys.exit(1)
+        # # Load baseline and instance DataFrames
+        # if not self.baseline_exists():
+        #     print("Baseline file does not exist. Please create a baseline first.")
+        #     sys.exit(1)
+        # if not self.instance_exists(instance_name):
+        #     print(f"Instance '{instance_name}' does not exist. Please run the instance first.")
+        #     sys.exit(1)
 
-        instance_folder = os.path.join(self.instance_folder_base, instance_name)
-        instance_parquet_file = os.path.join(instance_folder, f"{instance_name}.parquet")
-        instance_df = pd.read_parquet(instance_parquet_file)
+        # instance_folder = os.path.join(self.instance_folder_base, instance_name)
+        # instance_parquet_file = os.path.join(instance_folder, f"{instance_name}.parquet")
+        # instance_df = pd.read_parquet(instance_parquet_file)
 
-        value_diffs = self.compare_with_baseline(instance_df)
+        # value_diffs = self.compare_with_baseline(instance_df)
+
+        value_diffs = self.compare_with_baseline(instance_name)
         return value_diffs
     
         # # Merge and compare

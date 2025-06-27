@@ -68,6 +68,7 @@ class PowerBIRegressionTesterApp:
         tk.Button(self.root, text="Create Baseline", command=self.run_baseline, bg="lightblue").grid(row=len(fields)+1, column=0, pady=10)
         tk.Button(self.root, text="View Baseline", command=self.view_baseline, bg="white").grid(row=len(fields)+1, column=1, pady=10, sticky='w')
         tk.Button(self.root, text="Compare", command=self.run_compare, bg="orange").grid(row=len(fields)+1, column=3, pady=10, sticky='w')
+        tk.Button(self.root, text="Compare To Instance", command=self.compare_to_dialog, bg="orange").grid(row=len(fields)+1, column=4, padx=2, sticky='w')
 
         self.project_folder_var.trace_add("write", lambda *args: self.update_instance_dropdown())
 
@@ -223,6 +224,48 @@ class PowerBIRegressionTesterApp:
         self.save_all_configs()
         self.root.destroy()
 
+    def compare_to_dialog(self):
+        # Get the current instance name
+        instance1 = self.instance_dropdown.get().strip()
+        if not instance1:
+            messagebox.showerror("Error", "Please select the first instance from the main dropdown.")
+            return
+
+        # Get available instances (excluding the current one)
+        instances = list(self.instance_dropdown['values'])
+        if instance1 in instances:
+            instances.remove(instance1)
+        if not instances:
+            messagebox.showerror("Error", "No other instances available to compare.")
+            return
+
+        # Create dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Select Instance to Compare To")
+        tk.Label(dialog, text="Compare to instance:").grid(row=0, column=0, padx=10, pady=10)
+        compare_var = tk.StringVar()
+        compare_dropdown = ttk.Combobox(dialog, textvariable=compare_var, values=instances, state="readonly", width=40)
+        compare_dropdown.grid(row=0, column=1, padx=10, pady=10)
+        compare_dropdown.current(0)
+
+        def do_compare():
+            instance2 = compare_var.get().strip()
+            if not instance2:
+                messagebox.showerror("Error", "Please select an instance to compare to.")
+                return
+            tester = PowerBIRegressionTester.for_compare_only(self.project_folder_var.get())
+            if not tester.instance_exists(instance1) or not tester.instance_exists(instance2):
+                messagebox.showerror("Error", "One or both selected instances do not exist.")
+                return
+            df = tester.compare_instances(instance1, instance2)
+            self.show_result(df)
+            dialog.destroy()
+
+        tk.Button(dialog, text="Compare", command=do_compare, bg="orange").grid(row=1, column=0, columnspan=2, pady=10)
+        dialog.grab_set()
+        dialog.transient(self.root)
+        dialog.wait_window()
+
     def show_result(self, df):
         if df is not None and not df.empty:
             result_window = tk.Toplevel(root)
@@ -328,12 +371,12 @@ class PowerBIRegressionTesterApp:
         if not instance_name:
             messagebox.showerror("Error", "No instance selected.")
             return
-        # tester = PowerBIRegressionTester(
-        #     self.project_folder_var.get(),
-        #     self.connection_string_var.get(),
-        #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
-        # )
-        tester = PowerBIRegressionTester.for_compare_only(self.project_folder_var.get())
+        tester = PowerBIRegressionTester(
+            self.project_folder_var.get(),
+            self.connection_string_var.get(),
+            self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
+        )
+        # tester = PowerBIRegressionTester.for_compare_only(self.project_folder_var.get())
         if not tester.instance_exists(instance_name):
             messagebox.showerror("Error", f"Instance '{instance_name}' does not exist.")
             return
@@ -341,12 +384,12 @@ class PowerBIRegressionTesterApp:
         self.show_result(df)
         
     def run_baseline(self):
-        # tester = PowerBIRegressionTester(
-        #     self.project_folder_var.get(),
-        #     self.connection_string_var.get(),
-        #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
-        # )
-        tester = PowerBIRegressionTester.for_compare_only(self.project_folder_var.get())
+        tester = PowerBIRegressionTester(
+            self.project_folder_var.get(),
+            self.connection_string_var.get(),
+            self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
+        )
+        # tester = PowerBIRegressionTester.for_compare_only(self.project_folder_var.get())
         if tester.baseline_exists():
             if not messagebox.askyesno("Overwrite?", "Baseline exists. Overwrite?"):
                 return
