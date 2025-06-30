@@ -549,9 +549,12 @@ class PowerBIRegressionTester:
         )
         cols_to_compare = ['CombinedQueryHash']
         diff_mask = (comparison_df['_merge'] == 'both') & (
-            comparison_df[[col for col in cols_to_compare]].ne(
-                comparison_df[[f"{col}_baseline" for col in cols_to_compare]].values
-            ).any(axis=1)
+            (
+                (comparison_df['CombinedQueryHash'].notna() & comparison_df['CombinedQueryHash_baseline'].notna() &
+                 (comparison_df['CombinedQueryHash'] != comparison_df['CombinedQueryHash_baseline']))
+                |
+                (comparison_df['CombinedQueryHash'].isna() ^ comparison_df['CombinedQueryHash_baseline'].isna())
+            )
         )
         value_diffs = comparison_df[diff_mask]
 
