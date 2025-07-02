@@ -1,13 +1,14 @@
 import os
 import sys
 from sys import path
+import msal
 import json
 import glob
 import hashlib
 import pandas as pd
 import importlib.util
 from enum import Enum
-
+import clr
 class PowerBIRegressionTester:
     """
     A class to perform regression testing on Power BI DAX queries by comparing query results
@@ -38,6 +39,15 @@ class PowerBIRegressionTester:
             connection_string (str): Connection string for the Power BI semantic model.
             pbi_report_folder (str): Path to the folder containing the Power BI report definition.
         """
+        clr.AddReference("System")
+        import System
+        from System.Net import ServicePointManager, SecurityProtocolType
+
+        # Force TLS 1.2
+        # This is necessary for secure connections to Power BI services when using an interactive login.
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
+
         self.project_name = project_folder
         self.working_directory = os.getcwd()
         # self.server = server
@@ -74,6 +84,70 @@ class PowerBIRegressionTester:
         # Check if the ADOMD.NET path is already in the system path
         if adomd_path not in path:
             path.append(adomd_path)
+
+        if self.connection_string.strip() == '':
+            self.connection_string = self.build_interaction_connection_string()
+
+    def build_interaction_connection_string(self):
+        # Your Azure AD App Registration details
+        CLIENT_ID = '54640219-af44-42bb-adcd-d3722aa55e04'  # Application (client) ID
+        TENANT_ID = 'e39cce29-5716-43ba-b27d-1bdd8fd67901'  # Or your tenant ID
+        AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
+        SCOPES = ["https://analysis.windows.net/powerbi/api/.default"]
+        API_BASE = f"https://api.powerbi.com/v1.0/myorg"
+        initial_catalog = ''
+        xmla_endpoint = True
+        if xmla_endpoint:
+            initial_catalog = 'Contoso pbip'
+            datasource = 'powerbi://wabi-us-north-central-redirect.analysis.windows.net/v1.0/myorg/Contoso-Dev'
+            datasource = 'powerbi://api.powerbi.com/v1.0/myorg/Contoso-Dev'
+        else:
+            initial_catalog = 'sobe_wowvirtualserver-a40a9086-1177-40bc-ba25-a001072299f8'
+            datasource = 'pbiazure://api.powerbi.com/'
+
+        CACHE_FILE = "token_cache.bin"
+        force_reauthentication = True  # Set to True to force re-authentication
+
+        # Create persistent cache
+        cache = msal.SerializableTokenCache()
+        if os.path.exists(CACHE_FILE):
+            cache.deserialize(open(CACHE_FILE, "r").read())
+
+        app = msal.PublicClientApplication(
+            client_id=CLIENT_ID,
+            # authority="https://login.microsoftonline.com/common",
+            authority=AUTHORITY,
+            token_cache=cache
+        )
+
+        # Attempt to acquire token silently (cached)
+        accounts = app.get_accounts()
+        if accounts and not force_reauthentication:
+            result = app.acquire_token_silent(SCOPES, account=accounts[0])
+        else:
+            result = None
+
+        # If silent fails, do interactive login with prompt
+        if not result:
+            result = app.acquire_token_interactive(
+                scopes=SCOPES,
+                prompt="select_account"  # Always allow user to switch
+            )
+
+        # Save cache back to file
+        with open(CACHE_FILE, "w") as f:
+            f.write(cache.serialize())
+
+        access_token = result["access_token"]
+        self.connection_string = (
+        f"Provider=MSOLAP;"
+        f"Data Source={datasource};"
+        f"Initial Catalog=sobe_wowvirtualserver-{initial_catalog};"
+        f"Integrated Security=ClaimsToken;"
+        f"Persist Security Info=True;"
+        fr'Identity Provider="https://login.microsoftonline.com/common, https://analysis.windows.net/powerbi/api, {CLIENT_ID}";'
+        f'Password={access_token}'
+        )
 
     @classmethod
     def for_compare_only(cls, project_folder):
@@ -598,6 +672,9 @@ class PowerBIRegressionTester:
 
         if has_perf_analyzer_files:
             power_bi_perf_analyzer = self.load_events(self.QueryType.PERFORMANCE_ANALYZER)
+            # Filter out records where 'Query' is missing (NaN or empty string)
+            if not power_bi_perf_analyzer.empty and 'Query' in power_bi_perf_analyzer.columns:
+                power_bi_perf_analyzer = power_bi_perf_analyzer[power_bi_perf_analyzer['Query'].notna() & (power_bi_perf_analyzer['Query'] != "")]
 
         if has_dax_studio_files:
             dax_studio_df = self.load_events(self.QueryType.DAX_STUDIO)
@@ -753,7 +830,9 @@ class PowerBIRegressionTester:
             return pd.read_parquet(instance_parquet_file)
         return pd.DataFrame()
 
-    def normalize_line_endings(self, text: str) -> str:
+    def normalize_line_endings(self, text) -> str:
+        if not isinstance(text, str):
+            return text
         return text.replace('\r\n', '\n').replace('\r', '\n')
 
     def normalize_to_crlf(self, s):
