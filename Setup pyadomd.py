@@ -31,7 +31,7 @@ Exits with an error message if required folders or modules are not found.
 # This is a one-time setup, and the custom.pth file will persist across sessions.
 # If this is not working, you can manually copy the custom.pth file to your site-packages directory folder
 working_directory = os.getcwd()
-src_file = os.path.join(working_directory, "TAA TD API", "custom.pth")  # Path to your source file in the subfolder
+src_file = os.path.join(working_directory, "custom.pth")  # Path to your source file in the subfolder
 dst_sitepackage = next((p for p in site.getsitepackages() if "site-packages" in p.lower()), None)
 if not dst_sitepackage:
     print("site-packages directory not found.")
@@ -49,7 +49,7 @@ if not os.path.exists(dst_file) or not filecmp.cmp(src_file, dst_file, shallow=F
 spec = importlib.util.find_spec("pyadomd")
 if spec and spec.origin and len(spec.submodule_search_locations) > 0:
     pyadomd_folder = spec.submodule_search_locations[0]
-    src_file = os.path.join(working_directory, "TAA TD API", "pyadomd.txt")  # Path to your source file in the subfolder
+    src_file = os.path.join(working_directory, "pyadomd.txt")  # Path to your source file in the subfolder
     dst_file = os.path.join(pyadomd_folder, "pyadomd.py")
     if not filecmp.cmp(src_file, dst_file, shallow=False):
         shutil.copy(src_file, dst_file)

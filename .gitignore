@@ -1,6 +1,8 @@
 **/.pbi/localSettings.json
 **/.pbi/cache.abf
 
+token_cache.bin
+
 Projects/
 
 Sales & Returns Sample/baseline
