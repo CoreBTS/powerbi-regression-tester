@@ -169,7 +169,7 @@ class PowerBIRegressionTesterApp:
                 del self.configs[project_folder]
                 self.save_all_configs()
                 self.update_project_folder_dropdown()
-                current = self.update_project_folder_dropdown.get()
+                current = self.update_project_folder_dropdown()
                 if current in self.configs:
                     self.load_config_to_fields(current)
                 else:

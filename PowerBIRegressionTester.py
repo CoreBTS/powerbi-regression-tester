@@ -90,19 +90,24 @@ class PowerBIRegressionTester:
 
     def build_interaction_connection_string(self):
         # Your Azure AD App Registration details
-        CLIENT_ID = '54640219-af44-42bb-adcd-d3722aa55e04'  # Application (client) ID
+        # CLIENT_ID = '54640219-af44-42bb-adcd-d3722aa55e04'  # Application (client) ID
+
+        # 7f67af8a-fedc-4b08-8b4e-37c4d127b6cf is a well known client ID for Power BI (used by Bravo as well)
+        # https://learn.microsoft.com/en-us/power-bi/developer/visuals/entra-id-authentication?utm_source=chatgpt.com
+        CLIENT_ID = '7f67af8a-fedc-4b08-8b4e-37c4d127b6cf'
+
         TENANT_ID = 'e39cce29-5716-43ba-b27d-1bdd8fd67901'  # Or your tenant ID
         AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
         SCOPES = ["https://analysis.windows.net/powerbi/api/.default"]
         API_BASE = f"https://api.powerbi.com/v1.0/myorg"
         initial_catalog = ''
-        xmla_endpoint = True
+        xmla_endpoint = False
         if xmla_endpoint:
             initial_catalog = 'Contoso pbip'
             datasource = 'powerbi://wabi-us-north-central-redirect.analysis.windows.net/v1.0/myorg/Contoso-Dev'
             datasource = 'powerbi://api.powerbi.com/v1.0/myorg/Contoso-Dev'
         else:
-            initial_catalog = 'sobe_wowvirtualserver-a40a9086-1177-40bc-ba25-a001072299f8'
+            initial_catalog = 'sobe_wowvirtualserver-37b188f0-d623-4d60-b032-8a1ef55be1fb'
             datasource = 'pbiazure://api.powerbi.com/'
 
         CACHE_FILE = "token_cache.bin"
@@ -139,15 +144,17 @@ class PowerBIRegressionTester:
             f.write(cache.serialize())
 
         access_token = result["access_token"]
-        self.connection_string = (
+        connection_string = (
         f"Provider=MSOLAP;"
         f"Data Source={datasource};"
-        f"Initial Catalog=sobe_wowvirtualserver-{initial_catalog};"
+        f"Initial Catalog={initial_catalog};"
         f"Integrated Security=ClaimsToken;"
         f"Persist Security Info=True;"
         fr'Identity Provider="https://login.microsoftonline.com/common, https://analysis.windows.net/powerbi/api, {CLIENT_ID}";'
         f'Password={access_token}'
         )
+
+        return connection_string
 
     @classmethod
     def for_compare_only(cls, project_folder):
