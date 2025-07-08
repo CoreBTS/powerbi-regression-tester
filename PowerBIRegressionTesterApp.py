@@ -15,7 +15,6 @@ class PowerBIRegressionTesterApp:
 
         # Variables
         self.project_folder_var = tk.StringVar()
-        self.connection_string_var = tk.StringVar()
         self.pbi_report_folder_var = tk.StringVar()
         self.instance_name_var = tk.StringVar()
 
@@ -28,8 +27,7 @@ class PowerBIRegressionTesterApp:
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def setup_widgets(self):
-        # Config dropdown
-        tk.Label(self.root, text="Project Folder:").grid(row=0, column=0, sticky='e')
+        tk.Label(self.root, text="Project:").grid(row=0, column=0, sticky='e')
         self.project_folder_dropdown = ttk.Combobox(self.root, textvariable=self.project_folder_var, width=40, state="readonly")
         self.project_folder_dropdown.grid(row=0, column=1, padx=5, pady=2, sticky='w')
         self.project_folder_dropdown.bind("<<ComboboxSelected>>", self.on_project_folder_select)
@@ -37,54 +35,41 @@ class PowerBIRegressionTesterApp:
         tk.Button(self.root, text="Delete", command=self.delete_current_config).grid(row=0, column=3, padx=2, sticky='w')
         tk.Button(self.root, text="New", command=self.create_new_config).grid(row=0, column=4, padx=2, sticky='w')
 
-        # Fields
-        fields = [
-            ("Connection String", self.connection_string_var),
-            ("PBI Report Folder (optional)", self.pbi_report_folder_var),
-            ("Instance Name (for instance only)", None)
-        ]
-        for i, (label, var) in enumerate(fields, start=1):
-            tk.Label(self.root, text=label).grid(row=i, column=0, sticky='e')
-            if label.startswith("Instance Name"):
-                self.instance_dropdown = ttk.Combobox(self.root, textvariable=self.instance_name_var, width=40, state="readonly")
-                self.instance_dropdown.grid(row=i, column=1, padx=5, pady=2, sticky='w')
-                tk.Button(self.root, text="Delete", command=self.delete_current_instance, fg="red").grid(row=i, column=2, padx=2, sticky='w')
-                # tk.Button(self.root, text="View Instance", command=self.view_instance, bg="white").grid(row=len(fields)+1, column=3, pady=10, sticky='w')
-                # tk.Button(self.root, text="Create Instance", command=self.run_instance, bg="lightgreen").grid(row=i, column=3, padx=2, sticky='w')
-                tk.Button(self.root, text="View Instance", command=self.view_instance, bg="white").grid(row=i, column=3, padx=2, sticky='w')
-                tk.Button(self.root, text="Create Instance", command=self.run_instance, bg="lightgreen").grid(row=i, column=4, padx=2, sticky='w')
-            else:
-                entry = tk.Entry(self.root, textvariable=var, width=60)
-                entry.grid(row=i, column=1, padx=5, pady=2)
-                if "Folder" in label:
-                    tk.Button(self.root, text="Browse", command=lambda v=var: self.browse_folder(v)).grid(row=i, column=2, sticky='w')
+        # Project folder field
+        tk.Label(self.root, text="PBI Report Folder (optional)").grid(row=1, column=0, sticky='e')
+        entry = tk.Entry(self.root, textvariable=self.pbi_report_folder_var, width=60)
+        entry.grid(row=1, column=1, padx=5, pady=2)
+        tk.Button(self.root, text="Browse", command=lambda v=self.pbi_report_folder_var: self.browse_folder(v)).grid(row=1, column=2, sticky='w')
+
+        # Instance dropdown
+        tk.Label(self.root, text="Instance Name").grid(row=2, column=0, sticky='e')
+        self.instance_dropdown = ttk.Combobox(self.root, textvariable=self.instance_name_var, width=40, state="readonly")
+        self.instance_dropdown.grid(row=2, column=1, padx=5, pady=2, sticky='w')
+        tk.Button(self.root, text="Delete", command=self.delete_current_instance, fg="red").grid(row=2, column=2, padx=2, sticky='w')
+        tk.Button(self.root, text="View Instance", command=self.view_instance, bg="white").grid(row=2, column=3, padx=2, sticky='w')
+        tk.Button(self.root, text="Create Instance", command=self.run_instance, bg="lightgreen").grid(row=2, column=4, padx=2, sticky='w')
 
         # Action buttons
-        # tk.Button(self.root, text="Create Baseline", command=self.run_baseline, bg="lightblue").grid(row=len(fields)+1, column=0, pady=10)
-        # # tk.Button(self.root, text="Create Instance", command=self.run_instance, bg="lightgreen").grid(row=len(fields)+1, column=1, pady=10)
-        # tk.Button(self.root, text="Compare", command=self.run_compare, bg="orange").grid(row=len(fields)+1, column=2, pady=10)
+        tk.Button(self.root, text="Create Baseline", command=self.run_baseline, bg="lightblue").grid(row=3, column=0, pady=10)
+        tk.Button(self.root, text="View Baseline", command=self.view_baseline, bg="white").grid(row=3, column=1, pady=10, sticky='w')
+        tk.Button(self.root, text="Compare", command=self.run_compare, bg="orange").grid(row=3, column=3, pady=10, sticky='w')
+        tk.Button(self.root, text="Compare To Instance", command=self.compare_to_dialog, bg="orange").grid(row=3, column=4, padx=2, sticky='w')
 
-        # Action buttons
-        tk.Button(self.root, text="Create Baseline", command=self.run_baseline, bg="lightblue").grid(row=len(fields)+1, column=0, pady=10)
-        tk.Button(self.root, text="View Baseline", command=self.view_baseline, bg="white").grid(row=len(fields)+1, column=1, pady=10, sticky='w')
-        tk.Button(self.root, text="Compare", command=self.run_compare, bg="orange").grid(row=len(fields)+1, column=3, pady=10, sticky='w')
-        tk.Button(self.root, text="Compare To Instance", command=self.compare_to_dialog, bg="orange").grid(row=len(fields)+1, column=4, padx=2, sticky='w')
+        tk.Button(self.root, text="Edit Baseline", command=self.edit_baseline, bg="lightyellow").grid(row=4, column=0, pady=5)
+        tk.Button(self.root, text="Edit Instance", command=self.edit_selected_instance, bg="lightyellow").grid(row=4, column=1, pady=5)
 
         self.project_folder_var.trace_add("write", lambda *args: self.update_instance_dropdown())
 
-    # --- All your logic functions become methods below ---
     def browse_folder(self, var):
         folder = filedialog.askdirectory()
         if folder:
             var.set(folder)
 
     def update_instance_dropdown(self):
-        instance_base = os.path.join(os.getcwd(), PowerBIRegressionTester.PROJECT_FOLDER_BASE, self.project_folder_var.get(), PowerBIRegressionTester.INSTANCE_FOLDER_NAME)
-        # instance_base = os.path.join(project_path)
+        project = self.get_project(self.project_folder_var.get())
         instance_names = []
-        if os.path.isdir(instance_base):
-            instance_names = [name for name in os.listdir(instance_base)
-                              if os.path.isdir(os.path.join(instance_base, name))]
+        if project and "instances" in project:
+            instance_names = [inst["instance_name"] for inst in project["instances"]]
         self.instance_dropdown['values'] = instance_names
         if instance_names:
             self.instance_dropdown.current(0)
@@ -100,7 +85,7 @@ class PowerBIRegressionTesterApp:
             self.config_dropdown.set("")
 
     def update_project_folder_dropdown(self):
-        project_folders = list(self.configs.keys())
+        project_folders = [proj["name"] for proj in self.configs.get("projects", [])]
         self.project_folder_dropdown['values'] = project_folders
         if project_folders:
             self.project_folder_dropdown.current(0)
@@ -108,32 +93,33 @@ class PowerBIRegressionTesterApp:
             self.project_folder_dropdown.set("")
 
     def create_new_config(self):
-        new_name = simpledialog.askstring("New Project Folder", "Enter a name for the new project folder:")
+        new_name = simpledialog.askstring("New Project", "Enter a name for the new project:")
         if not new_name:
             return
-        if new_name in self.configs:
-            messagebox.showerror("Error", f"Project folder '{new_name}' already exists.")
+        if self.get_project(new_name):
+            messagebox.showerror("Error", f"Project '{new_name}' already exists.")
             return
-        # Add new config with empty/default values
-        self.configs[new_name] = {
-            "connection_string": "",
-            "pbi_report_folder": "",
-            "instance_name": ""
-        }
+        pbi_report_folder = simpledialog.askstring("PBI Report Folder", "Enter PBI Report Folder (optional):") or ""
+        self.configs.setdefault("projects", []).append({
+            "name": new_name,
+            "pbi_report_folder": pbi_report_folder,
+            "instances": []
+        })
         self.save_all_configs()
-        PowerBIRegressionTester.create_project_skeleton(new_name)
         self.update_project_folder_dropdown()
         self.project_folder_dropdown.set(new_name)
-        self.load_config_to_fields(new_name)
-
-    def load_config_to_fields(self, project_folder):
-        config = self.configs.get(project_folder, {})
-        self.project_folder_var.set(project_folder)
-        self.connection_string_var.set(config.get("connection_string", ""))
-        self.pbi_report_folder_var.set(config.get("pbi_report_folder", ""))
+        self.pbi_report_folder_var.set(pbi_report_folder)
         self.update_instance_dropdown()
-        instance_name = config.get("instance_name", "")
-        self.instance_dropdown.set(instance_name)
+
+    def load_config_to_fields(self, project_name):
+        project = self.get_project(project_name)
+        self.project_folder_var.set(project_name)
+        self.pbi_report_folder_var.set(project.get("pbi_report_folder", "") if project else "")
+        self.update_instance_dropdown()
+        if project and project.get("instances"):
+            self.instance_dropdown.set(project["instances"][0]["instance_name"])
+        else:
+            self.instance_dropdown.set("")
 
     def on_config_select(self, event=None):
         name = self.config_dropdown.get()
@@ -146,60 +132,261 @@ class PowerBIRegressionTesterApp:
             self.load_config_to_fields(project_folder)
     
     def save_current_config(self):
-        project_folder = self.project_folder_var.get().strip()
-        if not project_folder:
-            project_folder = simpledialog.askstring("Config Name", "Enter a name for this configuration:")
-            if not project_folder:
+        project_name = self.project_folder_var.get().strip()
+        if not project_name:
+            project_name = simpledialog.askstring("Project Name", "Enter a name for this project:")
+            if not project_name:
                 return
-            self.project_folder_dropdown.set(project_folder)
-        self.configs[project_folder] = {
-            "connection_string": self.connection_string_var.get(),
-            "pbi_report_folder": self.pbi_report_folder_var.get(),
-            "instance_name": self.instance_dropdown.get().strip()}
+            self.project_folder_dropdown.set(project_name)
+        project = self.get_project(project_name)
+        if not project:
+            project = {"name": project_name, "pbi_report_folder": self.pbi_report_folder_var.get(), "instances": []}
+            self.configs.setdefault("projects", []).append(project)
+        project["pbi_report_folder"] = self.pbi_report_folder_var.get()
         self.save_all_configs()
         self.update_project_folder_dropdown()
-        self.project_folder_dropdown.set(project_folder)
-        PowerBIRegressionTester.create_project_skeleton(project_folder)
-        messagebox.showinfo("Saved", f"Configuration '{project_folder}' saved.")
+        self.project_folder_dropdown.set(project_name)
+        messagebox.showinfo("Saved", f"Project '{project_name}' saved.")
 
     def delete_current_config(self):
-        project_folder = self.project_folder_dropdown.get()
-        if project_folder in self.configs:
-            if messagebox.askyesno("Delete", f"Delete configuration '{project_folder}'?"):
-                del self.configs[project_folder]
+        project_name = self.project_folder_var.get()
+        projects = self.configs.get("projects", [])
+        idx = next((i for i, p in enumerate(projects) if p["name"] == project_name), None)
+        if idx is not None:
+            if messagebox.askyesno("Delete", f"Delete project '{project_name}'?"):
+                del projects[idx]
                 self.save_all_configs()
                 self.update_project_folder_dropdown()
-                current = self.update_project_folder_dropdown()
-                if current in self.configs:
-                    self.load_config_to_fields(current)
+                if self.project_folder_dropdown['values']:
+                    self.load_config_to_fields(self.project_folder_dropdown.get())
                 else:
                     self.project_folder_var.set("")
-                    self.connection_string_var.set("")
                     self.pbi_report_folder_var.set("")
                     self.instance_dropdown.set("")
                     self.instance_dropdown['values'] = []
-                messagebox.showinfo("Deleted", f"Configuration '{project_folder}' deleted.")
+                messagebox.showinfo("Deleted", f"Project '{project_name}' deleted.")
 
     def delete_current_instance(self):
+        project = self.get_project(self.project_folder_var.get())
         instance_name = self.instance_dropdown.get().strip()
-        if not instance_name:
+        if not instance_name or not project or "instances" not in project:
             messagebox.showerror("Error", "No instance selected to delete.")
             return
-        project_path = os.path.join(os.getcwd(), self.project_folder_var.get())
-        instance_base = os.path.join(project_path, "instance")
-        instance_path = os.path.join(instance_base, instance_name)
-        if not os.path.isdir(instance_path):
-            messagebox.showerror("Error", f"Instance folder '{instance_name}' does not exist.")
-            return
-        if messagebox.askyesno("Delete Instance", f"Are you sure you want to delete instance '{instance_name}'? This cannot be undone."):
-            try:
-                shutil.rmtree(instance_path)
+        idx = next((i for i, inst in enumerate(project["instances"]) if inst["instance_name"] == instance_name), None)
+        if idx is not None:
+            if messagebox.askyesno("Delete Instance", f"Are you sure you want to delete instance '{instance_name}'? This cannot be undone."):
+                del project["instances"][idx]
+                self.save_all_configs()
                 self.update_instance_dropdown()
                 self.instance_dropdown.set("")
                 messagebox.showinfo("Deleted", f"Instance '{instance_name}' deleted.")
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to delete instance: {e}")
 
+    def prompt_instance_details(self, default_name=""):
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Instance Details")
+        dialog.grab_set()
+        dialog.resizable(False, False)
+
+        # Variables
+        instance_name_var = tk.StringVar(value=default_name)
+        server_name_var = tk.StringVar()
+        database_name_var = tk.StringVar()
+        user_id_var = tk.StringVar()
+        password_var = tk.StringVar()
+        interactive_var = tk.BooleanVar(value=False)
+
+        # Layout
+        tk.Label(dialog, text="Instance Name:").grid(row=0, column=0, sticky="e")
+        name_entry = tk.Entry(dialog, textvariable=instance_name_var, width=40)
+        name_entry.grid(row=0, column=1, padx=5, pady=2)
+
+        tk.Label(dialog, text="Server Name:").grid(row=1, column=0, sticky="e")
+        server_entry = tk.Entry(dialog, textvariable=server_name_var, width=40)
+        server_entry.grid(row=1, column=1, padx=5, pady=2)
+
+        tk.Label(dialog, text="Database Name:").grid(row=2, column=0, sticky="e")
+        db_entry = tk.Entry(dialog, textvariable=database_name_var, width=40)
+        db_entry.grid(row=2, column=1, padx=5, pady=2)
+
+        tk.Label(dialog, text="User ID:").grid(row=3, column=0, sticky="e")
+        user_entry = tk.Entry(dialog, textvariable=user_id_var, width=40)
+        user_entry.grid(row=3, column=1, padx=5, pady=2)
+
+        tk.Label(dialog, text="Password:").grid(row=4, column=0, sticky="e")
+        pass_entry = tk.Entry(dialog, textvariable=password_var, width=40, show="*")
+        pass_entry.grid(row=4, column=1, padx=5, pady=2)
+
+        interactive_chk = tk.Checkbutton(dialog, text="Interactive", variable=interactive_var)
+        interactive_chk.grid(row=5, column=0, columnspan=2, pady=5)
+
+        # Disable/enable fields based on checkbox
+        def toggle_fields(*args):
+            state = "disabled" if interactive_var.get() else "normal"
+            for widget in [server_entry, db_entry, user_entry, pass_entry]:
+                widget.config(state=state)
+        interactive_var.trace_add("write", toggle_fields)
+
+        # Buttons
+        result = {}
+        def on_ok():
+            result["instance_name"] = instance_name_var.get().strip()
+            result["interactive"] = interactive_var.get()
+            if not result["instance_name"]:
+                messagebox.showerror("Error", "Instance Name is required.", parent=dialog)
+                return
+            if not result["interactive"]:
+                result["server_name"] = server_name_var.get().strip()
+                result["database_name"] = database_name_var.get().strip()
+                result["user_id"] = user_id_var.get().strip()
+                result["password"] = password_var.get()
+                if not all([result["server_name"], result["database_name"], result["user_id"], result["password"]]):
+                    messagebox.showerror("Error", "All fields are required unless Interactive is checked.", parent=dialog)
+                    return
+            dialog.destroy()
+
+        def on_cancel():
+            result.clear()
+            dialog.destroy()
+
+        tk.Button(dialog, text="OK", command=on_ok).grid(row=6, column=0, pady=10)
+        tk.Button(dialog, text="Cancel", command=on_cancel).grid(row=6, column=1, pady=10)
+
+        dialog.wait_window()
+        return result if result else None
+        
+    def edit_selected_instance(self):
+        project = self.get_project(self.project_folder_var.get())
+        instance_name = self.instance_dropdown.get().strip()
+        if not project or not instance_name:
+            messagebox.showerror("Error", "No instance selected to edit.")
+            return
+        instance = next((inst for inst in project.get("instances", []) if inst["instance_name"] == instance_name), None)
+        if not instance:
+            messagebox.showerror("Error", f"Instance '{instance_name}' not found.")
+            return
+
+        # Prompt with current values
+        edited = self.prompt_instance_details_prefilled(instance)
+        if not edited:
+            return
+        # Overwrite the instance
+        idx = next((i for i, inst in enumerate(project["instances"]) if inst["instance_name"] == instance_name), None)
+        if idx is not None:
+            project["instances"][idx] = edited
+            self.save_all_configs()
+            self.update_instance_dropdown()
+            self.instance_dropdown.set(edited["instance_name"])
+            messagebox.showinfo("Saved", f"Instance '{edited['instance_name']}' updated.")
+
+    def edit_baseline(self):
+        # For baseline, you may want to use a convention (e.g., instance_name == "Baseline")
+        project = self.get_project(self.project_folder_var.get())
+        if not project:
+            messagebox.showerror("Error", "No project selected.")
+            return
+        instance = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == "baseline"), None)
+        if not instance:
+            messagebox.showerror("Error", "No baseline instance found.")
+            return
+        edited = self.prompt_instance_details_prefilled(instance)
+        if not edited:
+            return
+        idx = next((i for i, inst in enumerate(project["instances"]) if inst["instance_name"].lower() == "baseline"), None)
+        if idx is not None:
+            project["instances"][idx] = edited
+            self.save_all_configs()
+            self.update_instance_dropdown()
+            self.instance_dropdown.set(edited["instance_name"])
+            messagebox.showinfo("Saved", "Baseline instance updated.")
+
+    def prompt_instance_details_prefilled(self, instance):
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Edit Instance Details")
+        dialog.grab_set()
+        dialog.resizable(False, False)
+
+        # Variables
+        instance_name_var = tk.StringVar(value=instance.get("instance_name", ""))
+        server_name_var = tk.StringVar(value=instance.get("server_name", ""))
+        database_name_var = tk.StringVar(value=instance.get("database_name", ""))
+        user_id_var = tk.StringVar(value=instance.get("user_id", ""))
+        password_var = tk.StringVar(value=instance.get("password", ""))
+        interactive_var = tk.BooleanVar(value=instance.get("interactive", False))
+
+        # Layout
+        tk.Label(dialog, text="Instance Name:").grid(row=0, column=0, sticky="e")
+        name_entry = tk.Entry(dialog, textvariable=instance_name_var, width=40)
+        name_entry.grid(row=0, column=1, padx=5, pady=2)
+
+        tk.Label(dialog, text="Server Name:").grid(row=1, column=0, sticky="e")
+        server_entry = tk.Entry(dialog, textvariable=server_name_var, width=40)
+        server_entry.grid(row=1, column=1, padx=5, pady=2)
+
+        tk.Label(dialog, text="Database Name:").grid(row=2, column=0, sticky="e")
+        db_entry = tk.Entry(dialog, textvariable=database_name_var, width=40)
+        db_entry.grid(row=2, column=1, padx=5, pady=2)
+
+        tk.Label(dialog, text="User ID:").grid(row=3, column=0, sticky="e")
+        user_entry = tk.Entry(dialog, textvariable=user_id_var, width=40)
+        user_entry.grid(row=3, column=1, padx=5, pady=2)
+
+        tk.Label(dialog, text="Password:").grid(row=4, column=0, sticky="e")
+        pass_entry = tk.Entry(dialog, textvariable=password_var, width=40, show="*")
+        pass_entry.grid(row=4, column=1, padx=5, pady=2)
+
+        interactive_chk = tk.Checkbutton(dialog, text="Interactive", variable=interactive_var)
+        interactive_chk.grid(row=5, column=0, columnspan=2, pady=5)
+
+        # Disable/enable fields based on checkbox
+        def toggle_fields(*args):
+            state = "disabled" if interactive_var.get() else "normal"
+            for widget in [server_entry, db_entry, user_entry, pass_entry]:
+                widget.config(state=state)
+        interactive_var.trace_add("write", toggle_fields)
+        toggle_fields()  # Set initial state
+
+        # Buttons
+        result = {}
+        def on_ok():
+            result["instance_name"] = instance_name_var.get().strip()
+            result["interactive"] = interactive_var.get()
+            if not result["instance_name"]:
+                messagebox.showerror("Error", "Instance Name is required.", parent=dialog)
+                return
+            if not result["interactive"]:
+                result["server_name"] = server_name_var.get().strip()
+                result["database_name"] = database_name_var.get().strip()
+                result["user_id"] = user_id_var.get().strip()
+                result["password"] = password_var.get()
+                if not all([result["server_name"], result["database_name"], result["user_id"], result["password"]]):
+                    messagebox.showerror("Error", "All fields are required unless Interactive is checked.", parent=dialog)
+                    return
+            dialog.destroy()
+
+        def on_cancel():
+            result.clear()
+            dialog.destroy()
+
+        tk.Button(dialog, text="OK", command=on_ok).grid(row=6, column=0, pady=10)
+        tk.Button(dialog, text="Cancel", command=on_cancel).grid(row=6, column=1, pady=10)
+
+        dialog.wait_window()
+        return result if result else None
+
+    def save_instance_to_project(self, project_name, instance):
+        project = self.get_project(project_name)
+        if not project:
+            return
+        # Overwrite if instance with same name exists
+        instances = project.setdefault("instances", [])
+        idx = next((i for i, inst in enumerate(instances) if inst["instance_name"] == instance["instance_name"]), None)
+        if idx is not None:
+            instances[idx] = instance
+        else:
+            instances.append(instance)
+        self.save_all_configs()
+        self.update_instance_dropdown()
+        self.instance_dropdown.set(instance["instance_name"])
 
     def save_current_instance(self):
         name = self.instance_dropdown.get().strip()
@@ -210,16 +397,22 @@ class PowerBIRegressionTesterApp:
             self.instance_dropdown['values'] = values
             self.instance_dropdown.set(name)
             
+    def get_project(self, name):
+        for proj in self.configs.get("projects", []):
+            if proj["name"] == name:
+                return proj
+        return None
+
     def save_all_configs(self):
         with open(self.CONFIG_FILE, "w") as f:
-            json.dump(self.configs, f)
+            json.dump(self.configs, f, indent=2)
 
     def load_all_configs(self):
         if os.path.exists(self.CONFIG_FILE):
             with open(self.CONFIG_FILE, "r") as f:
                 return json.load(f)
-        return {}
-
+        return {"projects": []}
+    
     def on_closing(self):
         self.save_all_configs()
         self.root.destroy()
@@ -355,9 +548,27 @@ class PowerBIRegressionTesterApp:
             tree.bind("<Double-1>", on_double_click)
     
     def view_baseline(self):
+        project = self.get_project(self.project_folder_var.get())
+        if not project:
+            messagebox.showerror("Error", "No project selected.")
+            return
+        instance = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == "baseline"), None)
+        if not instance:
+            messagebox.showerror("Error", "No baseline exists for this project.")
+            return
+
+        if instance.get("interactive"):
+            conn_str = None  # Or handle interactive logic in your tester
+        else:
+            conn_str = (
+                f"Provider=MSOLAP;Data Source={instance['server_name']};"
+                f"Initial Catalog={instance['database_name']};"
+                f"User ID={instance['user_id']};Password={instance['password']}"
+            )
+
         tester = PowerBIRegressionTester(
             self.project_folder_var.get(),
-            self.connection_string_var.get(),
+            conn_str,
             self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
         )
         if not tester.baseline_exists():
@@ -371,12 +582,31 @@ class PowerBIRegressionTesterApp:
         if not instance_name:
             messagebox.showerror("Error", "No instance selected.")
             return
+
+        project = self.get_project(self.project_folder_var.get())
+        if not project:
+            messagebox.showerror("Error", "No project selected.")
+            return
+
+        instance = next((inst for inst in project.get("instances", []) if inst["instance_name"] == instance_name), None)
+        if not instance:
+            messagebox.showerror("Error", f"Instance '{instance_name}' does not exist.")
+            return
+
+        if instance.get("interactive"):
+            conn_str = None  # Or handle interactive logic in your tester
+        else:
+            conn_str = (
+                f"Provider=MSOLAP;Data Source={instance['server_name']};"
+                f"Initial Catalog={instance['database_name']};"
+                f"User ID={instance['user_id']};Password={instance['password']}"
+            )
+
         tester = PowerBIRegressionTester(
             self.project_folder_var.get(),
-            self.connection_string_var.get(),
+            conn_str,
             self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
         )
-        # tester = PowerBIRegressionTester.for_compare_only(self.project_folder_var.get())
         if not tester.instance_exists(instance_name):
             messagebox.showerror("Error", f"Instance '{instance_name}' does not exist.")
             return
@@ -384,40 +614,78 @@ class PowerBIRegressionTesterApp:
         self.show_result(df)
         
     def run_baseline(self):
-        tester = PowerBIRegressionTester(
-            self.project_folder_var.get(),
-            self.connection_string_var.get(),
-            self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
-        )
-        # tester = PowerBIRegressionTester.for_compare_only(self.project_folder_var.get())
-        if tester.baseline_exists():
+        project = self.get_project(self.project_folder_var.get())
+        if not project:
+            messagebox.showerror("Error", "No project selected.")
+            return
+
+        # Find existing baseline instance
+        instance = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == "baseline"), None)
+
+        if not instance:
+            # No baseline exists, prompt for details
+            instance = self.prompt_instance_details("Baseline")
+            if not instance:
+                return
+            self.save_instance_to_project(self.project_folder_var.get(), instance)
+        else:
+            # Baseline exists, ask to overwrite
             if not messagebox.askyesno("Overwrite?", "Baseline exists. Overwrite?"):
                 return
+            # Use the existing baseline config (do not prompt again)
+
+        # Build connection string
+        if instance.get("interactive"):
+            conn_str = None  # Or handle interactive logic in your tester
+        else:
+            conn_str = (
+                f"Provider=MSOLAP;Data Source={instance['server_name']};"
+                f"Initial Catalog={instance['database_name']};"
+                f"User ID={instance['user_id']};Password={instance['password']}"
+            )
+
+        tester = PowerBIRegressionTester(
+            self.project_folder_var.get(),
+            conn_str,
+            self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
+        )
         df = tester.run_baseline()
         self.show_result(df)
 
     def run_instance(self):
-        # instance_name = self.instance_dropdown.get().strip()
-        # if not instance_name:
-        #     messagebox.showerror("Error", "Instance name required.")
-        #     return
-        
-        # Prompt for new instance name if none selected
-        instance_name = simpledialog.askstring("New Instance Name", "Enter a name for the new instance:")
-        if not instance_name:
+        project = self.get_project(self.project_folder_var.get())
+        if not project:
+            messagebox.showerror("Error", "No project selected.")
             return
-        self.instance_dropdown.set(instance_name)
 
+        # Inherit from baseline if it exists
+        baseline = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == "baseline"), None)
+        prefill = {}
+        if baseline:
+            # Copy all baseline fields except instance_name
+            prefill = {k: v for k, v in baseline.items() if k != "instance_name"}
+        # Prompt for instance details, prefilled from baseline if available
+        instance = self.prompt_instance_details_prefilled(prefill)
+        if not instance:
+            return
+        self.save_instance_to_project(self.project_folder_var.get(), instance)
+        if instance.get("interactive"):
+            conn_str = None  # Or handle interactive logic in your tester
+        else:
+            conn_str = (
+                f"Provider=MSOLAP;Data Source={instance['server_name']};"
+                f"Initial Catalog={instance['database_name']};"
+                f"User ID={instance['user_id']};Password={instance['password']}"
+            )
         tester = PowerBIRegressionTester(
             self.project_folder_var.get(),
-            self.connection_string_var.get(),
+            conn_str,
             self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
         )
-        if tester.instance_exists(instance_name):
-            if not messagebox.askyesno("Overwrite?", f"Instance '{instance_name}' exists. Overwrite?"):
+        if tester.instance_exists(instance["instance_name"]):
+            if not messagebox.askyesno("Overwrite?", f"Instance '{instance['instance_name']}' exists. Overwrite?"):
                 return
-        df = tester.run_instance(instance_name)
-        self.save_current_instance()
+        df = tester.run_instance(instance["instance_name"])
         self.show_result(df)
 
     def run_compare(self):
