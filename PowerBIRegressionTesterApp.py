@@ -69,7 +69,11 @@ class PowerBIRegressionTesterApp:
         project = self.get_project(self.project_folder_var.get())
         instance_names = []
         if project and "instances" in project:
-            instance_names = [inst["instance_name"] for inst in project["instances"]]
+            instance_names = [
+                inst["instance_name"]
+                for inst in project["instances"]
+                if inst["instance_name"].lower() != "baseline"
+            ]
         self.instance_dropdown['values'] = instance_names
         if instance_names:
             self.instance_dropdown.current(0)
@@ -116,8 +120,17 @@ class PowerBIRegressionTesterApp:
         self.project_folder_var.set(project_name)
         self.pbi_report_folder_var.set(project.get("pbi_report_folder", "") if project else "")
         self.update_instance_dropdown()
+        # Only set to first non-baseline instance
         if project and project.get("instances"):
-            self.instance_dropdown.set(project["instances"][0]["instance_name"])
+            non_baseline = [
+                inst["instance_name"]
+                for inst in project["instances"]
+                if inst["instance_name"].lower() != "baseline"
+            ]
+            if non_baseline:
+                self.instance_dropdown.set(non_baseline[0])
+            else:
+                self.instance_dropdown.set("")
         else:
             self.instance_dropdown.set("")
 
@@ -451,7 +464,10 @@ class PowerBIRegressionTesterApp:
                 messagebox.showerror("Error", "One or both selected instances do not exist.")
                 return
             df = tester.compare_instances(instance1, instance2)
-            self.show_result(df)
+            if df is not None and not df.empty:
+                self.show_result(df)
+            else:
+                messagebox.showinfo("Compare", "No differences found.")
             dialog.destroy()
 
         tk.Button(dialog, text="Compare", command=do_compare, bg="orange").grid(row=1, column=0, columnspan=2, pady=10)
@@ -658,35 +674,38 @@ class PowerBIRegressionTesterApp:
             messagebox.showerror("Error", "No project selected.")
             return
 
-        # Inherit from baseline if it exists
+        # Always pre-fill with baseline if available, otherwise empty
         baseline = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == "baseline"), None)
-        prefill = {}
-        if baseline:
-            # Copy all baseline fields except instance_name
-            prefill = {k: v for k, v in baseline.items() if k != "instance_name"}
+        prefill = {k: v for k, v in baseline.items() if k != "instance_name"} if baseline else {}
+        prefill["instance_name"] = ""  # Always leave instance name empty
+
         # Prompt for instance details, prefilled from baseline if available
-        instance = self.prompt_instance_details_prefilled(prefill)
-        if not instance:
+        instance_data = self.prompt_instance_details_prefilled(prefill)
+        if not instance_data:
             return
-        self.save_instance_to_project(self.project_folder_var.get(), instance)
-        if instance.get("interactive"):
+
+        self.save_instance_to_project(self.project_folder_var.get(), instance_data)
+        if instance_data.get("interactive"):
             conn_str = None  # Or handle interactive logic in your tester
         else:
             conn_str = (
-                f"Provider=MSOLAP;Data Source={instance['server_name']};"
-                f"Initial Catalog={instance['database_name']};"
-                f"User ID={instance['user_id']};Password={instance['password']}"
+                f"Provider=MSOLAP;Data Source={instance_data['server_name']};"
+                f"Initial Catalog={instance_data['database_name']};"
+                f"User ID={instance_data['user_id']};Password={instance_data['password']}"
             )
         tester = PowerBIRegressionTester(
             self.project_folder_var.get(),
             conn_str,
             self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
         )
-        if tester.instance_exists(instance["instance_name"]):
-            if not messagebox.askyesno("Overwrite?", f"Instance '{instance['instance_name']}' exists. Overwrite?"):
+        if tester.instance_exists(instance_data["instance_name"]):
+            if not messagebox.askyesno("Overwrite?", f"Instance '{instance_data['instance_name']}' exists. Overwrite?"):
                 return
-        df = tester.run_instance(instance["instance_name"])
-        self.show_result(df)
+        df = tester.run_instance(instance_data["instance_name"])
+        if df is not None and not df.empty:
+            self.show_result(df)
+        else:
+            messagebox.showinfo("Compare", "No differences found.")
 
     def run_compare(self):
         project_folder = self.project_folder_var.get()
@@ -699,10 +718,10 @@ class PowerBIRegressionTesterApp:
         tester = PowerBIRegressionTester.for_compare_only(project_folder)
         if tester.instance_exists(instance_name):
             df = tester.compare(instance_name)
-            if df is not None:
+            if df is not None and not df.empty:
                 self.show_result(df)
             else:
-                messagebox.showinfo("Compare", "No differences found or comparison failed.")
+                messagebox.showinfo("Compare", "No differences found.")
         else:
             messagebox.showerror("Error", f"The instance '{instance_name}' does not exist.")
 
