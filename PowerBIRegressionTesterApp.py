@@ -3,6 +3,11 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 import os
 import json
 import shutil
+import base64
+import sys
+
+if sys.platform == "win32":
+    import win32crypt
 from PowerBIRegressionTester import PowerBIRegressionTester
 
 class PowerBIRegressionTesterApp:
@@ -26,6 +31,27 @@ class PowerBIRegressionTesterApp:
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
+    def encrypt_for_user(self, plaintext):
+        if sys.platform != "win32":
+            return plaintext  # fallback: no encryption
+        if not plaintext:
+            return ""
+        encrypted = win32crypt.CryptProtectData(
+            plaintext.encode("utf-8"), None, None, None, None, 0)
+        return base64.b64encode(encrypted).decode("utf-8")
+
+    def decrypt_for_user(self, ciphertext):
+        if sys.platform != "win32":
+            return ciphertext  # fallback: no decryption
+        if not ciphertext:
+            return ""
+        try:
+            encrypted = base64.b64decode(ciphertext)
+            decrypted = win32crypt.CryptUnprotectData(encrypted, None, None, None, 0)[1]
+            return decrypted.decode("utf-8")
+        except Exception:
+            return ""  # or raise
+        
     def setup_widgets(self):
         tk.Label(self.root, text="Project:").grid(row=0, column=0, sticky='e')
         self.project_folder_dropdown = ttk.Combobox(self.root, textvariable=self.project_folder_var, width=40, state="readonly")
@@ -58,6 +84,8 @@ class PowerBIRegressionTesterApp:
         tk.Button(self.root, text="Edit Baseline", command=self.edit_baseline, bg="lightyellow").grid(row=4, column=0, pady=5)
         tk.Button(self.root, text="Edit Instance", command=self.edit_selected_instance, bg="lightyellow").grid(row=4, column=1, pady=5)
 
+        tk.Button(self.root, text="Run Selected Instance", command=self.run_selected_instance, bg="lightgreen").grid(row=4, column=2, pady=5)
+
         self.project_folder_var.trace_add("write", lambda *args: self.update_instance_dropdown())
 
     def browse_folder(self, var):
@@ -65,6 +93,51 @@ class PowerBIRegressionTesterApp:
         if folder:
             var.set(folder)
 
+    def run_selected_instance(self):
+        project = self.get_project(self.project_folder_var.get())
+        if not project:
+            messagebox.showerror("Error", "No project selected.")
+            return
+
+        instance_name = self.instance_dropdown.get().strip()
+        if not instance_name:
+            messagebox.showerror("Error", "No instance selected.")
+            return
+
+        instance = next((inst for inst in project.get("instances", []) if inst["instance_name"] == instance_name), None)
+        if not instance:
+            messagebox.showerror("Error", f"Instance '{instance_name}' not found.")
+            return
+
+
+        if instance.get("interactive"):
+            conn_str = (
+                f"Provider=MSOLAP;Data Source={instance['server_name']};"
+                f"Initial Catalog={instance['database_name']};"
+            )
+        else:
+            conn_str = (
+                f"Provider=MSOLAP;Data Source={instance['server_name']};"
+                f"Initial Catalog={instance['database_name']};"
+                f"User ID={instance['user_id']};Password={instance['password']}"
+            )
+
+        tester = PowerBIRegressionTester(
+            self.project_folder_var.get(),
+            conn_str,
+            self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
+        )
+
+        if tester.instance_exists(instance_name):
+            if not messagebox.askyesno("Overwrite?", f"Instance '{instance_name}' exists. Overwrite?"):
+                return
+
+        df = tester.run_instance(instance_name)
+        if df is not None and not df.empty:
+            self.show_result(df)
+        else:
+            messagebox.showinfo("Compare", "No differences found.")
+            
     def update_instance_dropdown(self):
         project = self.get_project(self.project_folder_var.get())
         instance_names = []
@@ -226,7 +299,7 @@ class PowerBIRegressionTesterApp:
         user_entry.grid(row=3, column=1, padx=5, pady=2)
 
         tk.Label(dialog, text="Password:").grid(row=4, column=0, sticky="e")
-        pass_entry = tk.Entry(dialog, textvariable=password_var, width=40, show="*")
+        pass_entry = tk.Entry(dialog, textvariable=password_var, width=40, show="")
         pass_entry.grid(row=4, column=1, padx=5, pady=2)
 
         interactive_chk = tk.Checkbutton(dialog, text="Interactive", variable=interactive_var)
@@ -234,10 +307,14 @@ class PowerBIRegressionTesterApp:
 
         # Disable/enable fields based on checkbox
         def toggle_fields(*args):
-            state = "disabled" if interactive_var.get() else "normal"
-            for widget in [server_entry, db_entry, user_entry, pass_entry]:
-                widget.config(state=state)
+            # Only disable User ID and Password if Interactive is checked
+            user_entry.config(state="disabled" if interactive_var.get() else "normal")
+            pass_entry.config(state="disabled" if interactive_var.get() else "normal")
+            # Server and DB always enabled
+            server_entry.config(state="normal")
+            db_entry.config(state="normal")
         interactive_var.trace_add("write", toggle_fields)
+        toggle_fields()  # Set initial state
 
         # Buttons
         result = {}
@@ -251,8 +328,8 @@ class PowerBIRegressionTesterApp:
                 result["server_name"] = server_name_var.get().strip()
                 result["database_name"] = database_name_var.get().strip()
                 result["user_id"] = user_id_var.get().strip()
-                result["password"] = password_var.get()
-                if not all([result["server_name"], result["database_name"], result["user_id"], result["password"]]):
+                result["password"] = self.encrypt_for_user(password_var.get())
+                if not all([result["server_name"], result["database_name"]]):
                     messagebox.showerror("Error", "All fields are required unless Interactive is checked.", parent=dialog)
                     return
             dialog.destroy()
@@ -323,7 +400,7 @@ class PowerBIRegressionTesterApp:
         server_name_var = tk.StringVar(value=instance.get("server_name", ""))
         database_name_var = tk.StringVar(value=instance.get("database_name", ""))
         user_id_var = tk.StringVar(value=instance.get("user_id", ""))
-        password_var = tk.StringVar(value=instance.get("password", ""))
+        password_var = tk.StringVar(value=self.decrypt_for_user(instance.get("password", "")))
         interactive_var = tk.BooleanVar(value=instance.get("interactive", False))
 
         # Layout
@@ -344,7 +421,7 @@ class PowerBIRegressionTesterApp:
         user_entry.grid(row=3, column=1, padx=5, pady=2)
 
         tk.Label(dialog, text="Password:").grid(row=4, column=0, sticky="e")
-        pass_entry = tk.Entry(dialog, textvariable=password_var, width=40, show="*")
+        pass_entry = tk.Entry(dialog, textvariable=password_var, width=40, show="")
         pass_entry.grid(row=4, column=1, padx=5, pady=2)
 
         interactive_chk = tk.Checkbutton(dialog, text="Interactive", variable=interactive_var)
@@ -352,9 +429,12 @@ class PowerBIRegressionTesterApp:
 
         # Disable/enable fields based on checkbox
         def toggle_fields(*args):
-            state = "disabled" if interactive_var.get() else "normal"
-            for widget in [server_entry, db_entry, user_entry, pass_entry]:
-                widget.config(state=state)
+            # Only disable User ID and Password if Interactive is checked
+            user_entry.config(state="disabled" if interactive_var.get() else "normal")
+            pass_entry.config(state="disabled" if interactive_var.get() else "normal")
+            # Server Name and Database Name always enabled
+            server_entry.config(state="normal")
+            db_entry.config(state="normal")
         interactive_var.trace_add("write", toggle_fields)
         toggle_fields()  # Set initial state
 
@@ -370,8 +450,8 @@ class PowerBIRegressionTesterApp:
                 result["server_name"] = server_name_var.get().strip()
                 result["database_name"] = database_name_var.get().strip()
                 result["user_id"] = user_id_var.get().strip()
-                result["password"] = password_var.get()
-                if not all([result["server_name"], result["database_name"], result["user_id"], result["password"]]):
+                result["password"] = self.encrypt_for_user(password_var.get())
+                if not all([result["server_name"], result["database_name"]]):
                     messagebox.showerror("Error", "All fields are required unless Interactive is checked.", parent=dialog)
                     return
             dialog.destroy()
@@ -652,7 +732,10 @@ class PowerBIRegressionTesterApp:
 
         # Build connection string
         if instance.get("interactive"):
-            conn_str = None  # Or handle interactive logic in your tester
+            conn_str = (
+                f"Provider=MSOLAP;Data Source={instance['server_name']};"
+                f"Initial Catalog={instance['database_name']};"
+            )
         else:
             conn_str = (
                 f"Provider=MSOLAP;Data Source={instance['server_name']};"
