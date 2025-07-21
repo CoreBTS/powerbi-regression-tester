@@ -111,15 +111,12 @@ class PowerBIRegressionTesterApp:
 
 
         if instance.get("interactive"):
-            conn_str = (
-                f"Provider=MSOLAP;Data Source={instance['server_name']};"
-                f"Initial Catalog={instance['database_name']};"
-            )
+            conn_str = None
         else:
             conn_str = (
                 f"Provider=MSOLAP;Data Source={instance['server_name']};"
                 f"Initial Catalog={instance['database_name']};"
-                f"User ID={instance['user_id']};Password={instance['password']}"
+                f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
             )
 
         tester = PowerBIRegressionTester(
@@ -299,7 +296,7 @@ class PowerBIRegressionTesterApp:
         user_entry.grid(row=3, column=1, padx=5, pady=2)
 
         tk.Label(dialog, text="Password:").grid(row=4, column=0, sticky="e")
-        pass_entry = tk.Entry(dialog, textvariable=password_var, width=40, show="")
+        pass_entry = tk.Entry(dialog, textvariable=password_var, width=40, show="*")
         pass_entry.grid(row=4, column=1, padx=5, pady=2)
 
         interactive_chk = tk.Checkbutton(dialog, text="Interactive", variable=interactive_var)
@@ -324,9 +321,11 @@ class PowerBIRegressionTesterApp:
             if not result["instance_name"]:
                 messagebox.showerror("Error", "Instance Name is required.", parent=dialog)
                 return
+
+            result["server_name"] = server_name_var.get().strip()
+            result["database_name"] = database_name_var.get().strip()
+
             if not result["interactive"]:
-                result["server_name"] = server_name_var.get().strip()
-                result["database_name"] = database_name_var.get().strip()
                 result["user_id"] = user_id_var.get().strip()
                 result["password"] = self.encrypt_for_user(password_var.get())
                 if not all([result["server_name"], result["database_name"]]):
@@ -421,7 +420,7 @@ class PowerBIRegressionTesterApp:
         user_entry.grid(row=3, column=1, padx=5, pady=2)
 
         tk.Label(dialog, text="Password:").grid(row=4, column=0, sticky="e")
-        pass_entry = tk.Entry(dialog, textvariable=password_var, width=40, show="")
+        pass_entry = tk.Entry(dialog, textvariable=password_var, width=40, show="*")
         pass_entry.grid(row=4, column=1, padx=5, pady=2)
 
         interactive_chk = tk.Checkbutton(dialog, text="Interactive", variable=interactive_var)
@@ -446,9 +445,11 @@ class PowerBIRegressionTesterApp:
             if not result["instance_name"]:
                 messagebox.showerror("Error", "Instance Name is required.", parent=dialog)
                 return
+
+            result["server_name"] = server_name_var.get().strip()
+            result["database_name"] = database_name_var.get().strip()
+
             if not result["interactive"]:
-                result["server_name"] = server_name_var.get().strip()
-                result["database_name"] = database_name_var.get().strip()
                 result["user_id"] = user_id_var.get().strip()
                 result["password"] = self.encrypt_for_user(password_var.get())
                 if not all([result["server_name"], result["database_name"]]):
@@ -659,7 +660,7 @@ class PowerBIRegressionTesterApp:
             conn_str = (
                 f"Provider=MSOLAP;Data Source={instance['server_name']};"
                 f"Initial Catalog={instance['database_name']};"
-                f"User ID={instance['user_id']};Password={instance['password']}"
+                f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
             )
 
         tester = PowerBIRegressionTester(
@@ -695,7 +696,7 @@ class PowerBIRegressionTesterApp:
             conn_str = (
                 f"Provider=MSOLAP;Data Source={instance['server_name']};"
                 f"Initial Catalog={instance['database_name']};"
-                f"User ID={instance['user_id']};Password={instance['password']}"
+                f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
             )
 
         tester = PowerBIRegressionTester(
@@ -732,15 +733,12 @@ class PowerBIRegressionTesterApp:
 
         # Build connection string
         if instance.get("interactive"):
-            conn_str = (
-                f"Provider=MSOLAP;Data Source={instance['server_name']};"
-                f"Initial Catalog={instance['database_name']};"
-            )
+            conn_str = None
         else:
             conn_str = (
                 f"Provider=MSOLAP;Data Source={instance['server_name']};"
                 f"Initial Catalog={instance['database_name']};"
-                f"User ID={instance['user_id']};Password={instance['password']}"
+                f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
             )
 
         tester = PowerBIRegressionTester(
@@ -774,7 +772,7 @@ class PowerBIRegressionTesterApp:
             conn_str = (
                 f"Provider=MSOLAP;Data Source={instance_data['server_name']};"
                 f"Initial Catalog={instance_data['database_name']};"
-                f"User ID={instance_data['user_id']};Password={instance_data['password']}"
+                f"User ID={instance_data['user_id']};Password={self.decrypt_for_user(instance_data['password'])}"
             )
         tester = PowerBIRegressionTester(
             self.project_folder_var.get(),

@@ -53,8 +53,8 @@ class PowerBIRegressionTester:
         # self.server = server
         # self.catalog = model
         # self.connection_string = f"Provider=MSOLAP;Data Source={server};Initial Catalog={model}"
-        self.connection_string = connection_string
-        self.pbi_report_folder = pbi_report_folder
+        self.connection_string = connection_string if connection_string is not None else ""
+        self.pbi_report_folder = pbi_report_folder if pbi_report_folder is not None else ""
         self.project_folder = os.path.join(self.working_directory, self.PROJECT_FOLDER_BASE, project_folder)
         # self.pbi_pa_folder = os.path.join(self.project_folder, self.QUERIES_BASE_FOLDER)
         
@@ -107,7 +107,12 @@ class PowerBIRegressionTester:
             datasource = 'powerbi://wabi-us-north-central-redirect.analysis.windows.net/v1.0/myorg/Contoso-Dev'
             datasource = 'powerbi://api.powerbi.com/v1.0/myorg/Contoso-Dev'
         else:
-            initial_catalog = 'sobe_wowvirtualserver-37b188f0-d623-4d60-b032-8a1ef55be1fb'
+            # Interactive connection string for requires sobe_wowvirtualserver
+            # XMLA Endpoint and Pro Workspace didn't require sobe_wowvirtualserver
+            #initial_catalog = 'sobe_wowvirtualserver-37b188f0-d623-4d60-b032-8a1ef55be1fb'
+            #initial_catalog = 'sobe_wowvirtualserver-a40a9086-1177-40bc-ba25-a001072299f8'
+            initial_catalog = '37b188f0-d623-4d60-b032-8a1ef55be1fb'
+            # Pro might require this datasource
             datasource = 'pbiazure://api.powerbi.com/'
 
         CACHE_FILE = "token_cache.bin"
@@ -639,9 +644,19 @@ class PowerBIRegressionTester:
         )
         value_diffs = comparison_df[diff_mask]
 
-        desired_columns = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']
+        desired_columns = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount', 'RowCount_baseline', '_merge']
         value_diffs = value_diffs[desired_columns]
-        
+
+        # Rename columns if needed before selecting
+        value_diffs = value_diffs.rename(columns={
+        'PageName': 'Page Name',
+        'VisualID': 'Visual ID',
+        'ResultSets': 'Result Sets',
+        'RowCount': 'RowCount Instance',
+        'RowCount_baseline': 'RowCount Baseline',
+        '_merge': 'Merge'
+        })
+
         return value_diffs
 
     def prepare_df(self):
