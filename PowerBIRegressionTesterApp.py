@@ -110,20 +110,22 @@ class PowerBIRegressionTesterApp:
             return
 
 
-        if instance.get("interactive"):
-            conn_str = None
-        else:
-            conn_str = (
-                f"Provider=MSOLAP;Data Source={instance['server_name']};"
-                f"Initial Catalog={instance['database_name']};"
-                f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
-            )
+        # if instance.get("interactive"):
+        #     conn_str = None
+        # else:
+        #     conn_str = (
+        #         f"Provider=MSOLAP;Data Source={instance['server_name']};"
+        #         f"Initial Catalog={instance['database_name']};"
+        #         f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
+        #     )
 
-        tester = PowerBIRegressionTester(
-            self.project_folder_var.get(),
-            conn_str,
-            self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
-        )
+        # tester = PowerBIRegressionTester(
+        #     self.project_folder_var.get(),
+        #     conn_str,
+        #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
+        # )
+
+        tester = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, instance)
 
         if tester.instance_exists(instance_name):
             if not messagebox.askyesno("Overwrite?", f"Instance '{instance_name}' exists. Overwrite?"):
@@ -277,6 +279,7 @@ class PowerBIRegressionTesterApp:
         user_id_var = tk.StringVar()
         password_var = tk.StringVar()
         interactive_var = tk.BooleanVar(value=False)
+        xmla_endpoint_var = tk.BooleanVar(value=False)
 
         # Layout
         tk.Label(dialog, text="Instance Name:").grid(row=0, column=0, sticky="e")
@@ -302,6 +305,9 @@ class PowerBIRegressionTesterApp:
         interactive_chk = tk.Checkbutton(dialog, text="Interactive", variable=interactive_var)
         interactive_chk.grid(row=5, column=0, columnspan=2, pady=5)
 
+        xmla_chk = tk.Checkbutton(dialog, text="XMLA Endpoint", variable=xmla_endpoint_var)
+        xmla_chk.grid(row=6, column=0, columnspan=2, pady=5)
+
         # Disable/enable fields based on checkbox
         def toggle_fields(*args):
             # Only disable User ID and Password if Interactive is checked
@@ -321,9 +327,14 @@ class PowerBIRegressionTesterApp:
             if not result["instance_name"]:
                 messagebox.showerror("Error", "Instance Name is required.", parent=dialog)
                 return
+            
+            if not (interactive_var.get() or xmla_endpoint_var.get()):
+                messagebox.showerror("Error", "Either 'Interactive' or 'XMLA Endpoint' must be checked.", parent=dialog)
+                return
 
             result["server_name"] = server_name_var.get().strip()
             result["database_name"] = database_name_var.get().strip()
+            result["xmla_endpoint"] = xmla_endpoint_var.get()
 
             if not result["interactive"]:
                 result["user_id"] = user_id_var.get().strip()
@@ -337,8 +348,8 @@ class PowerBIRegressionTesterApp:
             result.clear()
             dialog.destroy()
 
-        tk.Button(dialog, text="OK", command=on_ok).grid(row=6, column=0, pady=10)
-        tk.Button(dialog, text="Cancel", command=on_cancel).grid(row=6, column=1, pady=10)
+        tk.Button(dialog, text="OK", command=on_ok).grid(row=7, column=0, pady=10)
+        tk.Button(dialog, text="Cancel", command=on_cancel).grid(row=7, column=1, pady=10)
 
         dialog.wait_window()
         return result if result else None
@@ -401,6 +412,7 @@ class PowerBIRegressionTesterApp:
         user_id_var = tk.StringVar(value=instance.get("user_id", ""))
         password_var = tk.StringVar(value=self.decrypt_for_user(instance.get("password", "")))
         interactive_var = tk.BooleanVar(value=instance.get("interactive", False))
+        xmla_endpoint_var = tk.BooleanVar(value=instance.get("xmla_endpoint", False) if "instance" in locals() else False)
 
         # Layout
         tk.Label(dialog, text="Instance Name:").grid(row=0, column=0, sticky="e")
@@ -426,6 +438,9 @@ class PowerBIRegressionTesterApp:
         interactive_chk = tk.Checkbutton(dialog, text="Interactive", variable=interactive_var)
         interactive_chk.grid(row=5, column=0, columnspan=2, pady=5)
 
+        xmla_chk = tk.Checkbutton(dialog, text="XMLA Endpoint", variable=xmla_endpoint_var)
+        xmla_chk.grid(row=6, column=0, columnspan=2, pady=5)
+
         # Disable/enable fields based on checkbox
         def toggle_fields(*args):
             # Only disable User ID and Password if Interactive is checked
@@ -446,8 +461,13 @@ class PowerBIRegressionTesterApp:
                 messagebox.showerror("Error", "Instance Name is required.", parent=dialog)
                 return
 
+            if not (interactive_var.get() or xmla_endpoint_var.get()):
+                messagebox.showerror("Error", "Either 'Interactive' or 'XMLA Endpoint' must be checked.", parent=dialog)
+                return
+            
             result["server_name"] = server_name_var.get().strip()
             result["database_name"] = database_name_var.get().strip()
+            result["xmla_endpoint"] = xmla_endpoint_var.get()
 
             if not result["interactive"]:
                 result["user_id"] = user_id_var.get().strip()
@@ -461,8 +481,8 @@ class PowerBIRegressionTesterApp:
             result.clear()
             dialog.destroy()
 
-        tk.Button(dialog, text="OK", command=on_ok).grid(row=6, column=0, pady=10)
-        tk.Button(dialog, text="Cancel", command=on_cancel).grid(row=6, column=1, pady=10)
+        tk.Button(dialog, text="OK", command=on_ok).grid(row=7, column=0, pady=10)
+        tk.Button(dialog, text="Cancel", command=on_cancel).grid(row=7, column=1, pady=10)
 
         dialog.wait_window()
         return result if result else None
@@ -559,7 +579,7 @@ class PowerBIRegressionTesterApp:
     def show_result(self, df):
         if df is not None and not df.empty:
             result_window = tk.Toplevel(root)
-            result_window.title("Result Table")
+            result_window.title(f"Result Table ({len(df)} rows)")
 
             frame = ttk.Frame(result_window)
             frame.pack(fill='both', expand=True)
@@ -654,20 +674,23 @@ class PowerBIRegressionTesterApp:
             messagebox.showerror("Error", "No baseline exists for this project.")
             return
 
-        if instance.get("interactive"):
-            conn_str = None  # Or handle interactive logic in your tester
-        else:
-            conn_str = (
-                f"Provider=MSOLAP;Data Source={instance['server_name']};"
-                f"Initial Catalog={instance['database_name']};"
-                f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
-            )
+        # if instance.get("interactive"):
+        #     conn_str = None  # Or handle interactive logic in your tester
+        # else:
+        #     conn_str = (
+        #         f"Provider=MSOLAP;Data Source={instance['server_name']};"
+        #         f"Initial Catalog={instance['database_name']};"
+        #         f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
+        #     )
 
-        tester = PowerBIRegressionTester(
-            self.project_folder_var.get(),
-            conn_str,
-            self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
-        )
+        # tester = PowerBIRegressionTester(
+        #     self.project_folder_var.get(),
+        #     conn_str,
+        #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
+        # )
+
+        tester = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, instance)
+
         if not tester.baseline_exists():
             messagebox.showerror("Error", "No baseline exists for this project.")
             return
@@ -690,20 +713,23 @@ class PowerBIRegressionTesterApp:
             messagebox.showerror("Error", f"Instance '{instance_name}' does not exist.")
             return
 
-        if instance.get("interactive"):
-            conn_str = None  # Or handle interactive logic in your tester
-        else:
-            conn_str = (
-                f"Provider=MSOLAP;Data Source={instance['server_name']};"
-                f"Initial Catalog={instance['database_name']};"
-                f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
-            )
+        # if instance.get("interactive"):
+        #     conn_str = None  # Or handle interactive logic in your tester
+        # else:
+        #     conn_str = (
+        #         f"Provider=MSOLAP;Data Source={instance['server_name']};"
+        #         f"Initial Catalog={instance['database_name']};"
+        #         f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
+        #     )
 
-        tester = PowerBIRegressionTester(
-            self.project_folder_var.get(),
-            conn_str,
-            self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
-        )
+        # tester = PowerBIRegressionTester(
+        #     self.project_folder_var.get(),
+        #     conn_str,
+        #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
+        # )
+
+        tester = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, instance)
+
         if not tester.instance_exists(instance_name):
             messagebox.showerror("Error", f"Instance '{instance_name}' does not exist.")
             return
@@ -732,20 +758,23 @@ class PowerBIRegressionTesterApp:
             # Use the existing baseline config (do not prompt again)
 
         # Build connection string
-        if instance.get("interactive"):
-            conn_str = None
-        else:
-            conn_str = (
-                f"Provider=MSOLAP;Data Source={instance['server_name']};"
-                f"Initial Catalog={instance['database_name']};"
-                f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
-            )
+        # if instance.get("interactive"):
+        #     conn_str = None
+        # else:
+        #     conn_str = (
+        #         f"Provider=MSOLAP;Data Source={instance['server_name']};"
+        #         f"Initial Catalog={instance['database_name']};"
+        #         f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
+        #     )
 
-        tester = PowerBIRegressionTester(
-            self.project_folder_var.get(),
-            conn_str,
-            self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
-        )
+        # tester = PowerBIRegressionTester(
+        #     self.project_folder_var.get(),
+        #     conn_str,
+        #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
+        # )
+
+        tester = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, instance)
+
         df = tester.run_baseline()
         self.show_result(df)
 
@@ -766,19 +795,23 @@ class PowerBIRegressionTesterApp:
             return
 
         self.save_instance_to_project(self.project_folder_var.get(), instance_data)
-        if instance_data.get("interactive"):
-            conn_str = None  # Or handle interactive logic in your tester
-        else:
-            conn_str = (
-                f"Provider=MSOLAP;Data Source={instance_data['server_name']};"
-                f"Initial Catalog={instance_data['database_name']};"
-                f"User ID={instance_data['user_id']};Password={self.decrypt_for_user(instance_data['password'])}"
-            )
-        tester = PowerBIRegressionTester(
-            self.project_folder_var.get(),
-            conn_str,
-            self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
-        )
+        # if instance_data.get("interactive"):
+        #     conn_str = None  # Or handle interactive logic in your tester
+        # else:
+        #     conn_str = (
+        #         f"Provider=MSOLAP;Data Source={instance_data['server_name']};"
+        #         f"Initial Catalog={instance_data['database_name']};"
+        #         f"User ID={instance_data['user_id']};Password={self.decrypt_for_user(instance_data['password'])}"
+        #     )
+        # tester = PowerBIRegressionTester(
+        #     self.project_folder_var.get(),
+        #     conn_str,
+        #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
+        # )
+
+        tester = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, instance_data)
+
+        # Check if instance already exists
         if tester.instance_exists(instance_data["instance_name"]):
             if not messagebox.askyesno("Overwrite?", f"Instance '{instance_data['instance_name']}' exists. Overwrite?"):
                 return
@@ -805,6 +838,27 @@ class PowerBIRegressionTesterApp:
                 messagebox.showinfo("Compare", "No differences found.")
         else:
             messagebox.showerror("Error", f"The instance '{instance_name}' does not exist.")
+
+    def create_regession_tester(self, project_folder_var, project_report_folder_var, instance):
+        data_source = instance.get('server_name')
+        database = instance.get('database_name')
+        user_id = instance.get('user_id')
+        password = self.decrypt_for_user(instance.get('password', ''))
+        interactive = instance.get("interactive", False)
+        xmla_endpoint = instance.get("xmla_endpoint", False)
+
+        tester = PowerBIRegressionTester(
+            self.project_folder_var.get(),
+            self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else "",
+            datasource=data_source,
+            database=database,
+            user_id=user_id,
+            password=password,
+            interactive=interactive,
+            xmla_endpoint=xmla_endpoint
+        )
+
+        return tester
 
 if __name__ == "__main__":
     root = tk.Tk()

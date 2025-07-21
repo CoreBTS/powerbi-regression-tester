@@ -29,7 +29,10 @@ class PowerBIRegressionTester:
         DAX_STUDIO = "DAXSTUDIO"
         PERFORMANCE_ANALYZER = "PERFORMANCEANALYZER"
 
-    def __init__(self, project_folder, connection_string, pbi_report_folder):
+    def __init__(self, project_folder, pbi_report_folder, datasource, database, user_id, password, interactive=False, xmla_endpoint=False, ):
+
+
+    #def __init__(self, project_folder, connection_string, pbi_report_folder):
         """
         Initialize the regression tester with project and environment details.
 
@@ -47,13 +50,19 @@ class PowerBIRegressionTester:
         # This is necessary for secure connections to Power BI services when using an interactive login.
         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
 
+        self.datasource = datasource if datasource is not None else ""
+        self.database = database if database is not None else ""
+        self.user_id = user_id if user_id is not None else ""
+        self.password = password if password is not None else ""
+        self.interactive = interactive
+        self.xmla_endpoint = xmla_endpoint
 
         self.project_name = project_folder
         self.working_directory = os.getcwd()
         # self.server = server
         # self.catalog = model
         # self.connection_string = f"Provider=MSOLAP;Data Source={server};Initial Catalog={model}"
-        self.connection_string = connection_string if connection_string is not None else ""
+        # self.connection_string = connection_string if connection_string is not None else ""
         self.pbi_report_folder = pbi_report_folder if pbi_report_folder is not None else ""
         self.project_folder = os.path.join(self.working_directory, self.PROJECT_FOLDER_BASE, project_folder)
         # self.pbi_pa_folder = os.path.join(self.project_folder, self.QUERIES_BASE_FOLDER)
@@ -85,8 +94,18 @@ class PowerBIRegressionTester:
         if adomd_path not in path:
             path.append(adomd_path)
 
-        if self.connection_string.strip() == '':
+        # If datasource is empty which signifies an interactive connection, build the connection string
+        if self.interactive:
             self.connection_string = self.build_interaction_connection_string()
+        else:
+            if not self.xmla_endpoint:
+                raise ValueError("Either 'interactive' must be True or 'xmla_endpoint' must be True to build a valid connection string.")
+
+            self.connection_string = (
+                f"Provider=MSOLAP;Data Source={self.datasource};"
+                f"Initial Catalog={self.database};"
+                f"User ID={self.user_id};Password={self.password}"
+            )
 
     def build_interaction_connection_string(self):
         # Your Azure AD App Registration details
@@ -101,22 +120,22 @@ class PowerBIRegressionTester:
         SCOPES = ["https://analysis.windows.net/powerbi/api/.default"]
         API_BASE = f"https://api.powerbi.com/v1.0/myorg"
         initial_catalog = ''
-        xmla_endpoint = False
-        if xmla_endpoint:
-            initial_catalog = 'Contoso pbip'
-            datasource = 'powerbi://wabi-us-north-central-redirect.analysis.windows.net/v1.0/myorg/Contoso-Dev'
-            datasource = 'powerbi://api.powerbi.com/v1.0/myorg/Contoso-Dev'
-        else:
-            # Interactive connection string for requires sobe_wowvirtualserver
-            # XMLA Endpoint and Pro Workspace didn't require sobe_wowvirtualserver
-            #initial_catalog = 'sobe_wowvirtualserver-37b188f0-d623-4d60-b032-8a1ef55be1fb'
-            #initial_catalog = 'sobe_wowvirtualserver-a40a9086-1177-40bc-ba25-a001072299f8'
-            initial_catalog = '37b188f0-d623-4d60-b032-8a1ef55be1fb'
-            # Pro might require this datasource
-            datasource = 'pbiazure://api.powerbi.com/'
+
+        # if self.xmla_endpoint:
+        #     initial_catalog = 'Contoso pbip'
+        #     datasource = 'powerbi://wabi-us-north-central-redirect.analysis.windows.net/v1.0/myorg/Contoso-Dev'
+        #     datasource = 'powerbi://api.powerbi.com/v1.0/myorg/Contoso-Dev'
+        # else:
+        #     # Interactive connection string for requires sobe_wowvirtualserver
+        #     # XMLA Endpoint and Pro Workspace didn't require sobe_wowvirtualserver
+        #     #initial_catalog = 'sobe_wowvirtualserver-37b188f0-d623-4d60-b032-8a1ef55be1fb'
+        #     #initial_catalog = 'sobe_wowvirtualserver-a40a9086-1177-40bc-ba25-a001072299f8'
+        #     initial_catalog = '37b188f0-d623-4d60-b032-8a1ef55be1fb'
+        #     # Pro requires this datasource
+        #     datasource = 'pbiazure://api.powerbi.com/'
 
         CACHE_FILE = "token_cache.bin"
-        force_reauthentication = True  # Set to True to force re-authentication
+        force_reauthentication = False  # Set to True to force re-authentication
 
         # Create persistent cache
         cache = msal.SerializableTokenCache()
@@ -148,11 +167,16 @@ class PowerBIRegressionTester:
         with open(CACHE_FILE, "w") as f:
             f.write(cache.serialize())
 
+        if not self.xmla_endpoint:
+            datasource = 'pbiazure://api.powerbi.com/'
+        else:
+            datasource = self.datasource
+
         access_token = result["access_token"]
         connection_string = (
         f"Provider=MSOLAP;"
         f"Data Source={datasource};"
-        f"Initial Catalog={initial_catalog};"
+        f"Initial Catalog={self.database};"
         f"Integrated Security=ClaimsToken;"
         f"Persist Security Info=True;"
         fr'Identity Provider="https://login.microsoftonline.com/common, https://analysis.windows.net/powerbi/api, {CLIENT_ID}";'
