@@ -29,7 +29,7 @@ class PowerBIRegressionTester:
         DAX_STUDIO = "DAXSTUDIO"
         PERFORMANCE_ANALYZER = "PERFORMANCEANALYZER"
 
-    def __init__(self, project_folder, pbi_report_folder, datasource, database, user_id, password, interactive=False, xmla_endpoint=False, ):
+    def __init__(self, project_folder, pbi_report_folder, datasource, database, user_id, password, interactive=False, xmla_endpoint=False, local_instance=False):
 
 
     #def __init__(self, project_folder, connection_string, pbi_report_folder):
@@ -56,6 +56,7 @@ class PowerBIRegressionTester:
         self.password = password if password is not None else ""
         self.interactive = interactive
         self.xmla_endpoint = xmla_endpoint
+        self.local_instance = local_instance
 
         self.project_name = project_folder
         self.working_directory = os.getcwd()
@@ -95,11 +96,16 @@ class PowerBIRegressionTester:
             path.append(adomd_path)
 
         # If datasource is empty which signifies an interactive connection, build the connection string
-        if self.interactive:
+        if self.local_instance:
+            self.connection_string = (
+                f"Provider=MSOLAP;Data Source={self.datasource};"
+                f"Initial Catalog={self.database};"
+            )
+        elif self.interactive:
             self.connection_string = self.build_interaction_connection_string()
         else:
             if not self.xmla_endpoint:
-                raise ValueError("Either 'interactive' must be True or 'xmla_endpoint' must be True to build a valid connection string.")
+                raise ValueError("Either 'Local Instance', 'Interactive' or 'XMLA Endpoint' must be True to build a valid connection string.")
 
             self.connection_string = (
                 f"Provider=MSOLAP;Data Source={self.datasource};"
@@ -119,7 +125,6 @@ class PowerBIRegressionTester:
         AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
         SCOPES = ["https://analysis.windows.net/powerbi/api/.default"]
         API_BASE = f"https://api.powerbi.com/v1.0/myorg"
-        initial_catalog = ''
 
         # if self.xmla_endpoint:
         #     initial_catalog = 'Contoso pbip'
@@ -794,7 +799,7 @@ class PowerBIRegressionTester:
         filtered_df.to_parquet(self.baseline_parquet_file, index=False)
         return filtered_df
 
-    def run_instance(self, instance_name):
+    def run_instance(self, instance_name, ignore_list=None):
         """
         Run an instance, save its results, and compare to the baseline.
 
@@ -818,7 +823,7 @@ class PowerBIRegressionTester:
 
         instance_df.to_csv(instance_csv_file, index=False)
         instance_df.to_parquet(instance_parquet_file, index=False)
-        value_diffs = self.compare_with_baseline(instance_df)
+        value_diffs = self.compare_with_baseline(instance_df, ignore_list)
         return value_diffs
     
     def compare(self, instance_name, ignore_list):
@@ -916,3 +921,21 @@ class PowerBIRegressionTester:
         ]
         for folder in folders:
             os.makedirs(folder, exist_ok=True)
+
+
+    def run_single_query(self, query):
+        """
+        Execute a single DAX query and return the result as a DataFrame.
+
+        Args:
+            query (str): The DAX query to execute.
+
+        Returns:
+            pd.DataFrame: The result of the executed query.
+        """
+        from pyadomd import Pyadomd
+        with Pyadomd(self.connection_string) as conn:
+            with conn.cursor().execute(query) as cur:
+                columns = [col[0] for col in cur.description]
+                rows = cur.fetchall()
+                return pd.DataFrame(rows, columns=columns)
