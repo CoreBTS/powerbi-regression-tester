@@ -396,7 +396,8 @@ class PowerBIRegressionTesterApp:
             project["instances"][idx] = edited
             self.save_all_configs()
             self.update_instance_dropdown()
-            self.instance_dropdown.set(edited["instance_name"])
+            if edited["instance_name"] != "Baseline":
+                self.instance_dropdown.set(edited["instance_name"])
             messagebox.showinfo("Saved", "Baseline instance updated.")
 
     def prompt_instance_details_prefilled(self, instance):
@@ -417,6 +418,7 @@ class PowerBIRegressionTesterApp:
         # Layout
         tk.Label(dialog, text="Instance Name:").grid(row=0, column=0, sticky="e")
         name_entry = tk.Entry(dialog, textvariable=instance_name_var, width=40)
+        name_entry.config(state="disabled" if instance.get("instance_name", "") == 'Baseline' else "normal")
         name_entry.grid(row=0, column=1, padx=5, pady=2)
 
         tk.Label(dialog, text="Server Name:").grid(row=1, column=0, sticky="e")
@@ -759,7 +761,7 @@ class PowerBIRegressionTesterApp:
         tester = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, instance)
 
         if not tester.instance_exists(instance_name):
-            messagebox.showerror("Error", f"Instance '{instance_name}' does not exist.")
+            messagebox.showerror("Error", f"Instance '{instance_name}' does not exist in the file system.")
             return
         df = tester.load_instance_df(instance_name)
         self.show_result(df)
