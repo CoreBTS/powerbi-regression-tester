@@ -79,7 +79,7 @@ class PowerBIRegressionTesterApp:
         tk.Button(self.root, text="Create Baseline", command=self.run_baseline, bg="lightblue").grid(row=3, column=0, pady=10)
         tk.Button(self.root, text="View Baseline", command=self.view_baseline, bg="white").grid(row=3, column=1, pady=10, sticky='w')
         tk.Button(self.root, text="Compare", command=self.run_compare, bg="orange").grid(row=3, column=3, pady=10, sticky='w')
-        tk.Button(self.root, text="Compare To Instance", command=self.compare_to_dialog, bg="orange").grid(row=3, column=4, padx=2, sticky='w')
+        tk.Button(self.root, text="Compare Instance To", command=self.compare_to_dialog, bg="orange").grid(row=3, column=4, padx=2, sticky='w')
 
         tk.Button(self.root, text="Edit Baseline", command=self.edit_baseline, bg="lightyellow").grid(row=4, column=0, pady=5)
         tk.Button(self.root, text="Edit Instance", command=self.edit_selected_instance, bg="lightyellow").grid(row=4, column=1, pady=5)
@@ -561,10 +561,13 @@ class PowerBIRegressionTesterApp:
                 messagebox.showerror("Error", "Please select an instance to compare to.")
                 return
             tester = PowerBIRegressionTester.for_compare_only(self.project_folder_var.get())
+            project = self.get_project(self.project_folder_var.get())
+            ignore_list = project.get("queriesToIgnore", []) if project else []
+
             if not tester.instance_exists(instance1) or not tester.instance_exists(instance2):
                 messagebox.showerror("Error", "One or both selected instances do not exist.")
                 return
-            df = tester.compare_instances(instance1, instance2)
+            df = tester.compare_instances(instance1, instance2, ignore_list)
             if df is not None and not df.empty:
                 self.show_result(df)
             else:
@@ -617,6 +620,7 @@ class PowerBIRegressionTesterApp:
             # Context menu for copying cell value
             menu = tk.Menu(result_window, tearoff=0)
             menu.add_command(label="Copy", command=lambda: copy_cell())
+            menu.add_command(label="Ignore Query", command=lambda: ignore_query())
 
             def copy_cell():
                 if hasattr(tree, 'clicked_cell'):
@@ -635,6 +639,12 @@ class PowerBIRegressionTesterApp:
                         row_idx = int(row_id)
                         col_idx = int(col_id.replace("#", "")) - 1
                         tree.clicked_cell = (row_idx, col_idx)
+                        col_name = df.columns[col_idx]
+                        # Enable/disable Ignore Query menu item
+                        if col_name == "ID":
+                            menu.entryconfig("Ignore Query", state="normal")
+                        else:
+                            menu.entryconfig("Ignore Query", state="disabled")
                         menu.tk_popup(event.x_root, event.y_root)
 
             tree.bind("<Button-3>", on_right_click)  # Right-click
@@ -662,6 +672,24 @@ class PowerBIRegressionTesterApp:
                         copy_btn = tk.Button(popup, text="Copy", command=copy_to_clipboard)
                         copy_btn.pack()
 
+            def ignore_query():
+                if hasattr(tree, 'clicked_cell'):
+                    row_idx, col_idx = tree.clicked_cell
+                    col_name = df.columns[col_idx]
+                    if col_name == "ID":
+                        query_id = cell_values.get((row_idx, col_name), None)
+                        if query_id:
+                            # Find the current project
+                            project_name = self.project_folder_var.get()
+                            project = self.get_project(project_name)
+                            if project is not None:
+                                ignore_list = project.setdefault("queriesToIgnore", [])
+                                if query_id not in ignore_list:
+                                    ignore_list.append(query_id)
+                                    self.save_all_configs()
+                                    messagebox.showinfo("Ignored", f"Query ID '{query_id}' added to ignore list for project '{project_name}'.")
+                                else:
+                                    messagebox.showinfo("Ignored", f"Query ID '{query_id}' is already in the ignore list.")            
             tree.bind("<Double-1>", on_double_click)
     
     def view_baseline(self):
@@ -830,8 +858,11 @@ class PowerBIRegressionTesterApp:
                 return
             self.instance_dropdown.set(instance_name)
         tester = PowerBIRegressionTester.for_compare_only(project_folder)
+        project = self.get_project(project_folder)
+        ignore_list = project.get("queriesToIgnore", []) if project else []
+
         if tester.instance_exists(instance_name):
-            df = tester.compare(instance_name)
+            df = tester.compare(instance_name, ignore_list)
             if df is not None and not df.empty:
                 self.show_result(df)
             else:

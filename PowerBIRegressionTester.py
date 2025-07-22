@@ -585,7 +585,7 @@ class PowerBIRegressionTester:
                     print(f"Error executing query {query_id}: {e}\n")
         return filtered_df
 
-    def compare_with_baseline(self, instance):
+    def compare_with_baseline(self, instance, ignore_list):
         """
         Compare the current run's DataFrame with the baseline, returning only differing rows.
 
@@ -614,7 +614,7 @@ class PowerBIRegressionTester:
             sys.exit(1)
         baseline_df = pd.read_parquet(self.baseline_parquet_file)
 
-        value_diffs = self.compare_internal(baseline_df, instance_df)
+        value_diffs = self.compare_internal(baseline_df, instance_df, ignore_list)
 
         # comparison_df = filtered_df.merge(
         #     baseline_df, on='ID', suffixes=('', '_baseline'), how='outer', indicator=True
@@ -632,7 +632,7 @@ class PowerBIRegressionTester:
         
         return value_diffs
     
-    def compare_instances(self, instance_one, instance_two):
+    def compare_instances(self, instance_one, instance_two, ignore_list):
         if not self.instance_exists(instance_one):
             print(f"Instance '{instance_one}' does not exist. Please run the instance first.")
             sys.exit(1)
@@ -649,11 +649,16 @@ class PowerBIRegressionTester:
         instance_two_parquet_file = os.path.join(instance_two_folder, f"{instance_two}.parquet")
         instance_two_df = pd.read_parquet(instance_two_parquet_file)
 
-        value_diffs = self.compare_internal(instance_one_df, instance_two_df)
+        value_diffs = self.compare_internal(instance_one_df, instance_two_df, ignore_list)
         
         return value_diffs
     
-    def compare_internal(self, instance_one_df, instance_two_df):
+    def compare_internal(self, instance_one_df, instance_two_df, ignore_list):
+        # Remove rows from both DataFrames where ID is in ignore_list
+        if ignore_list:
+            instance_one_df = instance_one_df[~instance_one_df['ID'].isin(ignore_list)]
+            instance_two_df = instance_two_df[~instance_two_df['ID'].isin(ignore_list)]
+
         comparison_df = instance_one_df.merge(
             instance_two_df, on='ID', suffixes=('', '_baseline'), how='outer', indicator=True
         )
@@ -816,7 +821,7 @@ class PowerBIRegressionTester:
         value_diffs = self.compare_with_baseline(instance_df)
         return value_diffs
     
-    def compare(self, instance_name):
+    def compare(self, instance_name, ignore_list):
         """
         Load the baseline and specified instance from parquet files and compare them.
 
@@ -840,7 +845,7 @@ class PowerBIRegressionTester:
 
         # value_diffs = self.compare_with_baseline(instance_df)
 
-        value_diffs = self.compare_with_baseline(instance_name)
+        value_diffs = self.compare_with_baseline(instance_name, ignore_list)
         return value_diffs
     
         # # Merge and compare
