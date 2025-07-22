@@ -678,7 +678,7 @@ class PowerBIRegressionTester:
         )
         value_diffs = comparison_df[diff_mask]
 
-        desired_columns = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount', 'RowCount_baseline', '_merge']
+        desired_columns = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount', 'RowCount_baseline', '_merge', 'CombinedQueryHash', 'CombinedQueryHash_baseline']
         value_diffs = value_diffs[desired_columns]
 
         # Rename columns if needed before selecting
@@ -688,7 +688,8 @@ class PowerBIRegressionTester:
         'ResultSets': 'Result Sets',
         'RowCount': 'RowCount Instance',
         'RowCount_baseline': 'RowCount Baseline',
-        '_merge': 'Merge'
+        '_merge': 'Merge',
+        'CombinedQueryHash': 'Combined Query Hash'
         })
 
         return value_diffs
@@ -936,6 +937,39 @@ class PowerBIRegressionTester:
         from pyadomd import Pyadomd
         with Pyadomd(self.connection_string) as conn:
             with conn.cursor().execute(query) as cur:
-                columns = [col[0] for col in cur.description]
-                rows = cur.fetchall()
-                return pd.DataFrame(rows, columns=columns)
+                # columns = [col[0] for col in cur.description]
+                # rows = cur.fetchall()
+                # return pd.DataFrame(rows, columns=columns)
+
+                result_set_index = 0
+                row_count = ""
+                resultset_hashes = []
+                has_next = True
+                dataframes = []
+                while has_next:
+                    result_set_index += 1
+                    # columns = [col[0] for col in cur.description]
+                    try:
+                        result_rows = cur.fetchall()
+                    except Exception as e:
+                        print(f"Error fetching results for query: {e}")
+                        result_rows = []
+
+                    if result_rows:
+                        columns = [col[0] for col in cur.description]
+                        result_df = pd.DataFrame(result_rows, columns=columns)
+                        if not result_df.empty:
+                            if row_count:
+                                row_count += f", {len(result_df)}"
+                            else:
+                                row_count = str(len(result_df))
+                            result_df['row_hash'] = result_df.apply(self.row_hash, axis=1)
+                            result_df = result_df.sort_values('row_hash').reset_index(drop=True)
+
+                            row_hashes = '|'.join(result_df['row_hash'].tolist())
+                            combined_row_hash = hashlib.sha256(row_hashes.encode('utf-8')).hexdigest()
+                            result_df['Query Hash'] = combined_row_hash
+
+                            dataframes.append(result_df)
+                    has_next = cur.nextresult()
+        return dataframes

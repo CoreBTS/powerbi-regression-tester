@@ -5,6 +5,7 @@ import json
 import shutil
 import base64
 import sys
+import pandas as pd
 
 if sys.platform == "win32":
     import win32crypt
@@ -771,49 +772,96 @@ class PowerBIRegressionTesterApp:
                         # Create testers for each instance
                         tester1 = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, inst1_obj)
                         tester2 = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, inst2_obj)
-                        # Run the query on each instance
-                        df1 = tester1.run_single_query(query_text)
-                        df2 = tester2.run_single_query(query_text)
-                        # Show results in new window
+
+                        # After you get lists of dataframes from both testers:
+                        df_list1 = tester1.run_single_query(query_text)  # List of DataFrames
+                        df_list2 = tester2.run_single_query(query_text)  # List of DataFrames
+
                         compare_window = tk.Toplevel(self.root)
                         compare_window.title(f"Query Results: {instance1} vs {instance2}")
-                        compare_window.geometry("1400x700")  # Set initial size (width x height)
-                        tk.Label(compare_window, text=f"{instance1} Result ({len(df1)} rows)").pack()
-                        frame1 = ttk.Frame(compare_window, width=1200, height=500)
-                        frame1.pack(fill='both', expand=True)
-                        frame1.pack_propagate(False)
-                        tree1_scroll_y = ttk.Scrollbar(frame1, orient="vertical")
-                        tree1_scroll_y.pack(side='right', fill='y')
-                        tree1_scroll_x = ttk.Scrollbar(frame1, orient="horizontal")
-                        tree1_scroll_x.pack(side='bottom', fill='x')
-                        tree1 = ttk.Treeview(frame1, columns=list(df1.columns), show='headings',
-                                            yscrollcommand=tree1_scroll_y.set, xscrollcommand=tree1_scroll_x.set, height=20)
-                        tree1.pack(side='left', fill='y')
-                        tree1_scroll_y.config(command=tree1.yview)
-                        tree1_scroll_x.config(command=tree1.xview)
-                        for col in df1.columns:
-                            tree1.heading(col, text=col)
-                            tree1.column(col, width=120, stretch=False)
-                        for _, row in df1.iterrows():
-                            tree1.insert('', 'end', values=list(row))
-                        tk.Label(compare_window, text=f"{instance2} Result ({len(df2)} rows)").pack()
-                        frame2 = ttk.Frame(compare_window, width=1200, height=500)
-                        frame2.pack(fill='both', expand=True)
-                        tree2_scroll_y = ttk.Scrollbar(frame2, orient="vertical")
-                        tree2_scroll_y.pack(side='right', fill='y')
-                        tree2_scroll_x = ttk.Scrollbar(frame2, orient="horizontal")
-                        tree2_scroll_x.pack(side='bottom', fill='x')
-                        tree2 = ttk.Treeview(frame2, columns=list(df2.columns), show='headings',
-                                            yscrollcommand=tree2_scroll_y.set, xscrollcommand=tree2_scroll_x.set, height=20)
-                        tree2.pack(side='left', fill='y')
-                        tree2_scroll_y.config(command=tree2.yview)
-                        tree2_scroll_x.config(command=tree2.xview)
-                        for col in df2.columns:
-                            tree2.heading(col, text=col)
-                            tree2.column(col, width=120, stretch=False)
-                        for _, row in df2.iterrows():
-                            tree2.insert('', 'end', values=list(row))
-                            
+                        compare_window.geometry("1400x700")
+
+                        notebook = ttk.Notebook(compare_window)
+                        notebook.pack(fill='both', expand=True)
+
+                        num_tabs = max(len(df_list1), len(df_list2))
+                        for idx in range(num_tabs):
+                            tab_name = f"Result {idx+1}"
+                            frame = ttk.Frame(notebook, width=1200, height=500)
+                            frame.pack(fill='both', expand=True)
+                            frame.pack_propagate(False)
+
+                            # Check if the df_list1 has this index
+                            instance1_df = pd.DataFrame()
+                            if idx < len(df_list1):
+                                instance1_df = df_list1[idx]
+
+
+                            # Check if the df_list2 has this index
+                            instance2_df = pd.DataFrame()
+                            if idx < len(df_list2):
+                                instance2_df = df_list2[idx]
+
+                            # Set tab color based on Query Hash comparison
+                            tab_color = "red"
+                            if not instance1_df.empty and not instance2_df.empty:
+                                hash1 = instance1_df.iloc[0].get("Query Hash", "")
+                                hash2 = instance2_df.iloc[0].get("Query Hash", "")
+                                if hash1 == hash2:
+                                    tab_color = "green"
+                            elif instance1_df.empty and instance2_df.empty:
+                                tab_color = "green"
+
+                            # Label for each instance
+                            label_frame = ttk.Frame(frame)
+                            label_frame.pack(fill='x')
+                            tk.Label(label_frame, text=f"{instance1} ({len(instance1_df)})", font=("Arial", 11, "bold"), fg=tab_color).pack(side='left', padx=10, pady=5)
+                            tk.Label(label_frame, text=f"{instance2} ({len(instance2_df)})", font=("Arial", 11, "bold"), fg=tab_color).pack(side='left', padx=10, pady=5)
+
+                            # Frames for each grid
+                            grid_frame = ttk.Frame(frame)
+                            grid_frame.pack(fill='both', expand=True)
+
+                            # Left grid (tester1)
+                            left_frame = ttk.Frame(grid_frame, width=600, height=500)
+                            left_frame.pack(side='left', fill='both', expand=True)
+                            left_frame.pack_propagate(False)
+                            tree1_scroll_y = ttk.Scrollbar(left_frame, orient="vertical")
+                            tree1_scroll_y.pack(side='right', fill='y')
+                            tree1_scroll_x = ttk.Scrollbar(left_frame, orient="horizontal")
+                            tree1_scroll_x.pack(side='bottom', fill='x')
+                            tree1 = ttk.Treeview(left_frame, columns=list(instance1_df.columns), show='headings',
+                                                yscrollcommand=tree1_scroll_y.set, xscrollcommand=tree1_scroll_x.set, height=20)
+                            tree1.pack(fill='both', expand=True)
+                            tree1_scroll_y.config(command=tree1.yview)
+                            tree1_scroll_x.config(command=tree1.xview)
+                            for col in instance1_df.columns:
+                                tree1.heading(col, text=col)
+                                tree1.column(col, width=120, stretch=False)
+                            for _, row in instance1_df.iterrows():
+                                tree1.insert('', 'end', values=list(row))
+
+                            # Right grid (tester2)
+                            right_frame = ttk.Frame(grid_frame, width=600, height=500)
+                            right_frame.pack(side='right', fill='both', expand=True)
+                            right_frame.pack_propagate(False)
+                            tree2_scroll_y = ttk.Scrollbar(right_frame, orient="vertical")
+                            tree2_scroll_y.pack(side='right', fill='y')
+                            tree2_scroll_x = ttk.Scrollbar(right_frame, orient="horizontal")
+                            tree2_scroll_x.pack(side='bottom', fill='x')
+                            tree2 = ttk.Treeview(right_frame, columns=list(instance2_df.columns), show='headings',
+                                                yscrollcommand=tree2_scroll_y.set, xscrollcommand=tree2_scroll_x.set, height=20)
+                            tree2.pack(fill='both', expand=True)
+                            tree2_scroll_y.config(command=tree2.yview)
+                            tree2_scroll_x.config(command=tree2.xview)
+                            for col in instance2_df.columns:
+                                tree2.heading(col, text=col)
+                                tree2.column(col, width=120, stretch=False)
+                            for _, row in instance2_df.iterrows():
+                                tree2.insert('', 'end', values=list(row))
+
+                            notebook.add(frame, text=tab_name)
+                                                        
             tree.bind("<Double-1>", on_double_click)
     
     def view_baseline(self):
