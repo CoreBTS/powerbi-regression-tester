@@ -133,7 +133,7 @@ class PowerBIRegressionTesterApp:
 
         df = tester.run_instance(instance_name)
         if df is not None and not df.empty:
-            self.show_result(df)
+            self.show_result(df, 'Baseline', instance_name)
         else:
             messagebox.showinfo("Compare", "No differences found.")
             
@@ -605,7 +605,7 @@ class PowerBIRegressionTesterApp:
                 return
             df = tester.compare_instances(instance1, instance2, ignore_list)
             if df is not None and not df.empty:
-                self.show_result(df)
+                self.show_result(df, instance1, instance2)
             else:
                 messagebox.showinfo("Compare", "No differences found.")
             dialog.destroy()
@@ -615,10 +615,28 @@ class PowerBIRegressionTesterApp:
         dialog.transient(self.root)
         dialog.wait_window()
 
-    def show_result(self, df):
+    def show_result(self, df, instance1=None, instance2=None):
         if df is not None and not df.empty:
             result_window = tk.Toplevel(root)
-            result_window.title(f"Result Table ({len(df)} rows)")
+
+            # Store instance names on the window for later use
+            result_window.instance1 = instance1
+            result_window.instance2 = instance2
+
+            if instance1 and instance2:
+                result_window.title(f"Compare Results: {instance1} vs {instance2} ({len(df)} rows)")
+                label_frame = ttk.Frame(result_window)
+                label_frame.pack(fill='x')
+                tk.Label(label_frame, text=f"Instance 1: {instance1}", font=("Arial", 12, "bold")).pack(side='left', padx=10, pady=5)
+                tk.Label(label_frame, text=f"Instance 2: {instance2}", font=("Arial", 12, "bold")).pack(side='left', padx=10, pady=5)
+            elif instance1:
+                result_window.title(f"Result Table: {instance1} ({len(df)} rows)")
+                label_frame = ttk.Frame(result_window)
+                label_frame.pack(fill='x')
+                tk.Label(label_frame, text=f"Instance: {instance1}", font=("Arial", 12, "bold")).pack(side='left', padx=10, pady=5)
+            else:
+                result_window.title(f"Result Table ({len(df)} rows)")
+
 
             frame = ttk.Frame(result_window)
             frame.pack(fill='both', expand=True)
@@ -732,65 +750,47 @@ class PowerBIRegressionTesterApp:
                 if hasattr(tree, 'clicked_cell'):
                     row_idx, col_idx = tree.clicked_cell
                     col_name = df.columns[col_idx]
-                    # Only allow if the column is "Query"
                     if col_name.lower() == "query":
                         query_text = cell_values.get((row_idx, col_name), None)
-                        # Get instance names from the selected rows
-                        id_col = "ID" if "ID" in df.columns else "id"
-                        instance1 = self.instance_dropdown.get().strip()
-                        # Prompt user for second instance
-                        project = self.get_project(self.project_folder_var.get())
-                        instances = [inst["instance_name"] for inst in project.get("instances", []) if inst["instance_name"] != instance1]
-                        if not instances:
-                            messagebox.showerror("Error", "No other instances available to run the query.")
+                        # Get instance names from window attributes
+                        instance1 = getattr(result_window, "instance1", None)
+                        instance2 = getattr(result_window, "instance2", None)
+                        if not instance1 or not instance2:
+                            messagebox.showerror("Error", "Both instance names must be available for this feature.")
                             return
-                        # Simple dialog to select second instance
-                        dialog = tk.Toplevel(result_window)
-                        dialog.title("Select Second Instance")
-                        tk.Label(dialog, text="Second Instance:").grid(row=0, column=0, padx=10, pady=10)
-                        compare_var = tk.StringVar()
-                        compare_dropdown = ttk.Combobox(dialog, textvariable=compare_var, values=instances, state="readonly", width=40)
-                        compare_dropdown.grid(row=0, column=1, padx=10, pady=10)
-                        compare_dropdown.current(0)
-                        
-                        def do_run():
-                            instance2 = compare_var.get().strip()
-                            dialog.destroy()
-                            # Run query on both instances
-                            tester1 = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, next(inst for inst in project["instances"] if inst["instance_name"] == instance1))
-                            tester2 = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, next(inst for inst in project["instances"] if inst["instance_name"] == instance2))
-                            df1 = tester1.run_single_query(query_text)
-                            df2 = tester2.run_single_query(query_text)
-                            # Show results in new window
-                            compare_window = tk.Toplevel(self.root)
-                            compare_window.title(f"Query Results: {instance1} vs {instance2}")
-                            # Instance 1 grid
-                            tk.Label(compare_window, text=f"{instance1} Result").pack()
-                            frame1 = ttk.Frame(compare_window)
-                            frame1.pack(fill='both', expand=True)
-                            tree1 = ttk.Treeview(frame1, columns=list(df1.columns), show='headings')
-                            tree1.pack(fill='both', expand=True)
-                            for col in df1.columns:
-                                tree1.heading(col, text=col)
-                                tree1.column(col, width=120)
-                            for _, row in df1.iterrows():
-                                tree1.insert('', 'end', values=list(row))
-                            # Instance 2 grid
-                            tk.Label(compare_window, text=f"{instance2} Result").pack()
-                            frame2 = ttk.Frame(compare_window)
-                            frame2.pack(fill='both', expand=True)
-                            tree2 = ttk.Treeview(frame2, columns=list(df2.columns), show='headings')
-                            tree2.pack(fill='both', expand=True)
-                            for col in df2.columns:
-                                tree2.heading(col, text=col)
-                                tree2.column(col, width=120)
-                            for _, row in df2.iterrows():
-                                tree2.insert('', 'end', values=list(row))
-                        tk.Button(dialog, text="Run", command=do_run).grid(row=1, column=0, columnspan=2, pady=10)
-                        dialog.grab_set()
-                        dialog.transient(result_window)
-                        dialog.wait_window()
-                        
+                        project = self.get_project(self.project_folder_var.get())
+                        inst1_obj = next((inst for inst in project["instances"] if inst["instance_name"] == instance1), None)
+                        inst2_obj = next((inst for inst in project["instances"] if inst["instance_name"] == instance2), None)
+                        if not inst1_obj or not inst2_obj:
+                            messagebox.showerror("Error", "One or both instance configs not found.")
+                            return
+                        tester1 = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, inst1_obj)
+                        tester2 = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, inst2_obj)
+                        df1 = tester1.run_single_query(query_text)
+                        df2 = tester2.run_single_query(query_text)
+                        # Show results in new window
+                        compare_window = tk.Toplevel(self.root)
+                        compare_window.title(f"Query Results: {instance1} vs {instance2}")
+                        tk.Label(compare_window, text=f"{instance1} Result").pack()
+                        frame1 = ttk.Frame(compare_window)
+                        frame1.pack(fill='both', expand=True)
+                        tree1 = ttk.Treeview(frame1, columns=list(df1.columns), show='headings')
+                        tree1.pack(fill='both', expand=True)
+                        for col in df1.columns:
+                            tree1.heading(col, text=col)
+                            tree1.column(col, width=120)
+                        for _, row in df1.iterrows():
+                            tree1.insert('', 'end', values=list(row))
+                        tk.Label(compare_window, text=f"{instance2} Result").pack()
+                        frame2 = ttk.Frame(compare_window)
+                        frame2.pack(fill='both', expand=True)
+                        tree2 = ttk.Treeview(frame2, columns=list(df2.columns), show='headings')
+                        tree2.pack(fill='both', expand=True)
+                        for col in df2.columns:
+                            tree2.heading(col, text=col)
+                            tree2.column(col, width=120)
+                        for _, row in df2.iterrows():
+                            tree2.insert('', 'end', values=list(row))                
             tree.bind("<Double-1>", on_double_click)
     
     def view_baseline(self):
@@ -824,7 +824,7 @@ class PowerBIRegressionTesterApp:
             messagebox.showerror("Error", "No baseline exists for this project.")
             return
         df = tester.load_baseline_df()
-        self.show_result(df)
+        self.show_result(df, instance["instance_name"])
 
     def view_instance(self):
         instance_name = self.instance_dropdown.get().strip()
@@ -863,7 +863,7 @@ class PowerBIRegressionTesterApp:
             messagebox.showerror("Error", f"Instance '{instance_name}' does not exist in the file system.")
             return
         df = tester.load_instance_df(instance_name)
-        self.show_result(df)
+        self.show_result(df, instance_name)
         
     def run_baseline(self):
         project = self.get_project(self.project_folder_var.get())
@@ -905,7 +905,7 @@ class PowerBIRegressionTesterApp:
         tester = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, instance)
 
         df = tester.run_baseline()
-        self.show_result(df)
+        self.show_result(df, 'Baseline')
 
     def run_instance(self):
         project = self.get_project(self.project_folder_var.get())
@@ -948,7 +948,7 @@ class PowerBIRegressionTesterApp:
         ignore_list = project.get("queriesToIgnore", []) if project else []
         df = tester.run_instance(instance_data["instance_name"], ignore_list)
         if df is not None and not df.empty:
-            self.show_result(df)
+            self.show_result(df, 'Baseline', instance_data["instance_name"])
         else:
             messagebox.showinfo("Compare", "No differences found.")
 
@@ -967,7 +967,7 @@ class PowerBIRegressionTesterApp:
         if tester.instance_exists(instance_name):
             df = tester.compare(instance_name, ignore_list)
             if df is not None and not df.empty:
-                self.show_result(df)
+                self.show_result(df, 'Baseline', instance_name)
             else:
                 messagebox.showinfo("Compare", "No differences found.")
         else:
