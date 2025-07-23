@@ -651,6 +651,10 @@ class PowerBIRegressionTesterApp:
             tree = ttk.Treeview(frame, columns=list(df.columns), show='headings',
                                 yscrollcommand=tree_scroll_y.set, xscrollcommand=tree_scroll_x.set, height=20)
             tree.pack(fill='both', expand=True)  # <-- This enables expansion in both directions
+            
+            # After creating your Treeview (tree), add this for each column:
+            for col in df.columns:
+                tree.heading(col, text=col, command=lambda _col=col: treeview_sort_column(tree, _col, False))
 
             tree_scroll_y.config(command=tree.yview)
             tree_scroll_x.config(command=tree.xview)
@@ -680,6 +684,19 @@ class PowerBIRegressionTesterApp:
             menu.add_command(label="Copy", command=lambda: copy_cell())
             menu.add_command(label="Ignore Query", command=lambda: ignore_query())
             menu.add_command(label="Run Query on Both Instances", command=lambda: run_query_on_both())
+
+            def treeview_sort_column(tree, col, reverse):
+                # Get all values in the column and sort them
+                l = [(tree.set(k, col), k) for k in tree.get_children('')]
+                try:
+                    l.sort(key=lambda t: float(t[0]) if t[0].replace('.', '', 1).isdigit() else t[0], reverse=reverse)
+                except Exception:
+                    l.sort(key=lambda t: t[0], reverse=reverse)
+                # Rearrange items in sorted positions
+                for index, (val, k) in enumerate(l):
+                    tree.move(k, '', index)
+                # Reverse sort next time
+                tree.heading(col, command=lambda: treeview_sort_column(tree, col, not reverse))
 
             def copy_cell():
                 if hasattr(tree, 'clicked_cell'):
@@ -757,6 +774,8 @@ class PowerBIRegressionTesterApp:
                     col_name = df.columns[col_idx]
                     if col_name.lower() == "query":
                         query_text = cell_values.get((row_idx, col_name), None)
+                        # Get the value in the "ID" column for this row
+                        id_value = cell_values.get((row_idx, "ID"), None)
                         # Get instance names from window attributes
                         instance1 = getattr(result_window, "instance1", None)
                         instance2 = getattr(result_window, "instance2", None)
@@ -778,7 +797,7 @@ class PowerBIRegressionTesterApp:
                         df_list2 = tester2.run_single_query(query_text)  # List of DataFrames
 
                         compare_window = tk.Toplevel(self.root)
-                        compare_window.title(f"Query Results: {instance1} vs {instance2}")
+                        compare_window.title(f"Query Results: {instance1} vs {instance2} for Query ID: {id_value}")
                         compare_window.geometry("1400x700")
 
                         notebook = ttk.Notebook(compare_window)
@@ -832,14 +851,41 @@ class PowerBIRegressionTesterApp:
                             tree1_scroll_x.pack(side='bottom', fill='x')
                             tree1 = ttk.Treeview(left_frame, columns=list(instance1_df.columns), show='headings',
                                                 yscrollcommand=tree1_scroll_y.set, xscrollcommand=tree1_scroll_x.set, height=20)
+                            
+                            # After creating your Treeview (tree), add this for each column:
+                            for col in instance1_df.columns:
+                                tree1.heading(col, text=col, command=lambda _col=col: treeview_sort_column(tree1, _col, False))
+
+                            tree1.tag_configure('green_text', background='#d4f4dd')
+                            tree1.tag_configure('red_text', background='#f4d4d4')
+
+                            # Build a set of row_hashes from instance2_df
+                            instance2_hashes = set(instance2_df["row_hash"]) if "row_hash" in instance2_df.columns else set()
+
+                            for row_idx, row in instance1_df.iterrows():
+                                values = []
+                                tags = []
+                                for col in instance1_df.columns:
+                                    val = row[col]
+                                    display_val = val
+                                    values.append(display_val)
+                                # Mark row if its row_hash is in instance2_df
+                                if "row_hash" in instance1_df.columns:
+                                    if row["row_hash"] in instance2_hashes:
+                                        tags.append('green_text')
+                                    else:
+                                        tags.append('red_text')
+                                tree1.insert('', 'end', iid=row_idx, values=values, tags=tags)
+
+
                             tree1.pack(fill='both', expand=True)
                             tree1_scroll_y.config(command=tree1.yview)
                             tree1_scroll_x.config(command=tree1.xview)
                             for col in instance1_df.columns:
                                 tree1.heading(col, text=col)
                                 tree1.column(col, width=120, stretch=False)
-                            for _, row in instance1_df.iterrows():
-                                tree1.insert('', 'end', values=list(row))
+                            # for _, row in instance1_df.iterrows():
+                            #     tree1.insert('', 'end', values=list(row))
 
                             # Right grid (tester2)
                             right_frame = ttk.Frame(grid_frame, width=600, height=500)
@@ -851,14 +897,40 @@ class PowerBIRegressionTesterApp:
                             tree2_scroll_x.pack(side='bottom', fill='x')
                             tree2 = ttk.Treeview(right_frame, columns=list(instance2_df.columns), show='headings',
                                                 yscrollcommand=tree2_scroll_y.set, xscrollcommand=tree2_scroll_x.set, height=20)
+
+                            # After creating your Treeview (tree), add this for each column:
+                            for col in instance2_df.columns:
+                                tree2.heading(col, text=col, command=lambda _col=col: treeview_sort_column(tree2, _col, False))
+
+                            tree2.tag_configure('green_text', background='#d4f4dd')
+                            tree2.tag_configure('red_text', background='#f4d4d4')
+
+                            # Build a set of row_hashes from instance2_df
+                            instance1_hashes = set(instance1_df["row_hash"]) if "row_hash" in instance1_df.columns else set()
+
+                            for row_idx, row in instance2_df.iterrows():
+                                values = []
+                                tags = []
+                                for col in instance2_df.columns:
+                                    val = row[col]
+                                    display_val = val
+                                    values.append(display_val)
+                                # Mark row if its row_hash is in instance1_df
+                                if "row_hash" in instance2_df.columns:
+                                    if row["row_hash"] in instance1_hashes:
+                                        tags.append('green_text')
+                                    else:
+                                        tags.append('red_text')
+                                tree2.insert('', 'end', iid=row_idx, values=values, tags=tags)
+
                             tree2.pack(fill='both', expand=True)
                             tree2_scroll_y.config(command=tree2.yview)
                             tree2_scroll_x.config(command=tree2.xview)
                             for col in instance2_df.columns:
                                 tree2.heading(col, text=col)
                                 tree2.column(col, width=120, stretch=False)
-                            for _, row in instance2_df.iterrows():
-                                tree2.insert('', 'end', values=list(row))
+                            # for _, row in instance2_df.iterrows():
+                            #     tree2.insert('', 'end', values=list(row))
 
                             notebook.add(frame, text=tab_name)
                                                         

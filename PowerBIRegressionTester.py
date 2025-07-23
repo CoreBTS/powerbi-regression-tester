@@ -957,7 +957,32 @@ class PowerBIRegressionTester:
 
                     if result_rows:
                         columns = [col[0] for col in cur.description]
+                        # The Dataframe was converting integers to floats when columns contained missing values or BLANK()
+                        # This caused the row_hash to change, so we need to ensure the types are preserved
+
+                        # Derive types from result_rows before creating DataFrame
+                        expected_types = {}
+                        # Transpose rows to columns
+                        col_values = list(zip(*result_rows))
+                        for idx, col in enumerate(columns):
+                            # Get first non-null value
+                            first_valid = next((v for v in col_values[idx] if v is not None), None)
+                            if isinstance(first_valid, int):
+                                expected_types[col] = "Int64"
+                            elif isinstance(first_valid, float):
+                                expected_types[col] = "float"
+                            elif isinstance(first_valid, str):
+                                expected_types[col] = "string"
+                            else:
+                                expected_types[col] = "object"
+
                         result_df = pd.DataFrame(result_rows, columns=columns)
+                        for col, dtype in expected_types.items():
+                            try:
+                                result_df[col] = result_df[col].astype(dtype)
+                            except Exception:
+                                pass  # fallback if conversion fails
+
                         if not result_df.empty:
                             if row_count:
                                 row_count += f", {len(result_df)}"
