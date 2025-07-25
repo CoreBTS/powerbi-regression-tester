@@ -74,7 +74,7 @@ class PowerBIRegressionTesterApp:
         self.instance_dropdown.grid(row=2, column=1, padx=5, pady=2, sticky='w')
         tk.Button(self.root, text="Delete", command=self.delete_current_instance, fg="red").grid(row=2, column=2, padx=2, sticky='w')
         tk.Button(self.root, text="View Instance", command=self.view_instance, bg="white").grid(row=2, column=3, padx=2, sticky='w')
-        tk.Button(self.root, text="Create Instance", command=self.run_instance, bg="lightgreen").grid(row=2, column=4, padx=2, sticky='w')
+        tk.Button(self.root, text="Create Instance", command=self.create_instance, bg="lightgreen").grid(row=2, column=4, padx=2, sticky='w')
 
         # Action buttons
         tk.Button(self.root, text="Create Baseline", command=self.run_baseline, bg="lightblue").grid(row=3, column=0, pady=10)
@@ -85,7 +85,7 @@ class PowerBIRegressionTesterApp:
         tk.Button(self.root, text="Edit Baseline", command=self.edit_baseline, bg="lightyellow").grid(row=4, column=0, pady=5)
         tk.Button(self.root, text="Edit Instance", command=self.edit_selected_instance, bg="lightyellow").grid(row=4, column=1, pady=5)
 
-        tk.Button(self.root, text="Run Selected Instance", command=self.run_selected_instance, bg="lightgreen").grid(row=4, column=2, pady=5)
+        tk.Button(self.root, text="Update Selected Instance", command=self.run_selected_instance, bg="lightgreen").grid(row=4, column=2, pady=5)
 
         self.project_folder_var.trace_add("write", lambda *args: self.update_instance_dropdown())
 
@@ -624,9 +624,12 @@ class PowerBIRegressionTesterApp:
             result_window.instance1 = instance1
             result_window.instance2 = instance2
 
-            if instance1 and instance2:
+            result_window.geometry("1400x700")  # Set initial size (width x height)
+
+            two_instances = instance1 and instance2
+
+            if two_instances:
                 result_window.title(f"Compare Results: {instance1} vs {instance2} ({len(df)} rows)")
-                result_window.geometry("1400x700")  # Set initial size (width x height)
                 label_frame = ttk.Frame(result_window)
                 label_frame.pack(fill='x')
                 tk.Label(label_frame, text=f"Instance 1: {instance1}", font=("Arial", 12, "bold")).pack(side='left', padx=10, pady=5)
@@ -683,7 +686,11 @@ class PowerBIRegressionTesterApp:
             menu = tk.Menu(result_window, tearoff=0)
             menu.add_command(label="Copy", command=lambda: copy_cell())
             menu.add_command(label="Ignore Query", command=lambda: ignore_query())
-            menu.add_command(label="Run Query on Both Instances", command=lambda: run_query_on_both())
+            menu.add_command(label="View Query", command=lambda: on_double_click())
+            if two_instances:
+                menu.add_command(label="Run Query on Both Instances", command=lambda: run_query())
+            else:
+                menu.add_command(label="Run Query", command=lambda: run_query())
 
             def treeview_sort_column(tree, col, reverse):
                 # Get all values in the column and sort them
@@ -717,36 +724,39 @@ class PowerBIRegressionTesterApp:
                         tree.clicked_cell = (row_idx, col_idx)
                         col_name = df.columns[col_idx]
                         # Enable/disable Ignore Query menu item
-                        if col_name == "ID":
-                            menu.entryconfig("Ignore Query", state="normal")
-                        else:
-                            menu.entryconfig("Ignore Query", state="disabled")
+                        # if col_name == "ID":
+                        #     menu.entryconfig("Ignore Query", state="normal")
+                        # else:
+                        #     menu.entryconfig("Ignore Query", state="disabled")
                         menu.tk_popup(event.x_root, event.y_root)
 
             tree.bind("<Button-3>", on_right_click)  # Right-click
 
             # Double-click to show/copy full text
-            def on_double_click(event):
-                item = tree.selection()
-                if item:
-                    row = tree.item(item, "values")
-                    col = tree.identify_column(event.x)
-                    col_index = int(col.replace("#", "")) - 1
-                    col_name = df.columns[col_index]
-                    full_text = df.iloc[tree.index(item[0]), col_index]
-                    if col_name.lower() == "query" and isinstance(full_text, str):
-                        # Show full text in a popup with copy option
-                        popup = tk.Toplevel(result_window)
-                        popup.title(f"Full text: {col_name}")
-                        text_box = tk.Text(popup, wrap='word', width=80, height=10)
-                        text_box.insert('1.0', str(full_text))
-                        text_box.pack(expand=True, fill='both')
-                        text_box.config(state='normal')
-                        def copy_to_clipboard():
-                            popup.clipboard_clear()
-                            popup.clipboard_append(str(full_text))
-                        copy_btn = tk.Button(popup, text="Copy", command=copy_to_clipboard)
-                        copy_btn.pack()
+            def on_double_click():
+                if hasattr(tree, 'clicked_cell'):
+                    row_idx, col_idx = tree.clicked_cell
+                    # Always use the "query" column for full text display
+                    if "query" in df.columns:
+                        col_idx = df.columns.get_loc("query")
+                        col_name = "query"
+                    else:
+                        col_name = df.columns[col_idx]
+                    # full_text = df.iloc[tree.index(item[0]), col_idx]
+                    full_text = cell_values.get((row_idx, "Query"), "")
+                    # if col_name.lower() == "query" and isinstance(full_text, str):
+                    # Show full text in a popup with copy option
+                    popup = tk.Toplevel(result_window)
+                    popup.title(f"Full text: {col_name}")
+                    text_box = tk.Text(popup, wrap='word', width=80, height=10)
+                    text_box.insert('1.0', str(full_text))
+                    text_box.pack(expand=True, fill='both')
+                    text_box.config(state='normal')
+                    def copy_to_clipboard():
+                        popup.clipboard_clear()
+                        popup.clipboard_append(str(full_text))
+                    copy_btn = tk.Button(popup, text="Copy", command=copy_to_clipboard)
+                    copy_btn.pack()
 
             def ignore_query():
                 if hasattr(tree, 'clicked_cell'):
@@ -768,125 +778,154 @@ class PowerBIRegressionTesterApp:
                                     messagebox.showinfo("Ignored", f"Query ID '{query_id}' is already in the ignore list.")            
 
 
-            def run_query_on_both():
+            def run_query():
                 if hasattr(tree, 'clicked_cell'):
                     row_idx, col_idx = tree.clicked_cell
                     col_name = df.columns[col_idx]
-                    if col_name.lower() == "query":
-                        query_text = cell_values.get((row_idx, col_name), None)
-                        # Get the value in the "ID" column for this row
-                        id_value = cell_values.get((row_idx, "ID"), None)
-                        # Get instance names from window attributes
-                        instance1 = getattr(result_window, "instance1", None)
-                        instance2 = getattr(result_window, "instance2", None)
-                        if not instance1 or not instance2:
-                            messagebox.showerror("Error", "Both instance names must be available for this feature.")
-                            return
-                        project = self.get_project(self.project_folder_var.get())
-                        inst1_obj = next((inst for inst in project["instances"] if inst["instance_name"] == instance1), None)
+                    # if col_name.lower() == "query":
+                    query_text = cell_values.get((row_idx, "Query"), None)
+                    # Get the value in the "ID" column for this row
+                    id_value = cell_values.get((row_idx, "ID"), None)
+                    # Get instance names from window attributes
+                    instance1 = getattr(result_window, "instance1", None)
+                    instance2 = getattr(result_window, "instance2", None)
+                    # Determine if this was a compare (two instances) or just a view (one instance)
+                    two_instances = instance1 and instance2
+
+                    # if not is_compare:
+                    #     messagebox.showerror("Error", "This feature is only available when comparing two instances.")
+                    #     return
+
+                    project = self.get_project(self.project_folder_var.get())
+                    inst1_obj = next((inst for inst in project["instances"] if inst["instance_name"] == instance1), None)
+                    inst2_obj = None
+                    if two_instances:
                         inst2_obj = next((inst for inst in project["instances"] if inst["instance_name"] == instance2), None)
-                        if not inst1_obj or not inst2_obj:
-                            messagebox.showerror("Error", "One or both instance configs not found.")
-                            return
-                        # Create testers for each instance
-                        tester1 = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, inst1_obj)
+
+                    if not inst1_obj:
+                        messagebox.showerror("Error", "The first instance config was not found.")
+                        return
+
+                    if not inst2_obj and two_instances:
+                        messagebox.showerror("Error", "Neither instance config not found.")
+                        return
+                    
+                    # Create testers for each instance
+                    tester1 = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, inst1_obj)
+                    tester2 = None
+                    if two_instances:
                         tester2 = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, inst2_obj)
 
-                        # After you get lists of dataframes from both testers:
-                        df_list1 = tester1.run_single_query(query_text)  # List of DataFrames
+                    # After you get lists of dataframes from both testers:
+                    df_list1 = tester1.run_single_query(query_text)  # List of DataFrames
+                    df_list2 = []
+                    if two_instances:
                         df_list2 = tester2.run_single_query(query_text)  # List of DataFrames
 
-                        compare_window = tk.Toplevel(self.root)
+                    if (not df_list1 or all(df.empty for df in df_list1)) and (not df_list2 or all(df.empty for df in df_list2)):
+                        messagebox.showinfo("Query Results", "No results returned for this query on either instance.")
+                        return
+
+                    compare_window = tk.Toplevel(self.root)
+                    if two_instances:
                         compare_window.title(f"Query Results: {instance1} vs {instance2} for Query ID: {id_value}")
-                        compare_window.geometry("1400x700")
+                    else:
+                        compare_window.title(f"Query Results: {instance1}")
+                    compare_window.geometry("1400x700")
 
-                        notebook = ttk.Notebook(compare_window)
-                        notebook.pack(fill='both', expand=True)
+                    notebook = ttk.Notebook(compare_window)
+                    notebook.pack(fill='both', expand=True)
 
-                        num_tabs = max(len(df_list1), len(df_list2))
-                        for idx in range(num_tabs):
-                            tab_name = f"Result {idx+1}"
-                            frame = ttk.Frame(notebook, width=1200, height=500)
-                            frame.pack(fill='both', expand=True)
-                            frame.pack_propagate(False)
+                    num_tabs = max(len(df_list1), len(df_list2))
+                    for idx in range(num_tabs):
+                        tab_name = f"Result {idx+1}"
+                        frame = ttk.Frame(notebook, width=1200, height=500)
+                        frame.pack(fill='both', expand=True)
+                        frame.pack_propagate(False)
 
-                            # Check if the df_list1 has this index
-                            instance1_df = pd.DataFrame()
-                            if idx < len(df_list1):
-                                instance1_df = df_list1[idx]
+                        # Check if the df_list1 has this index
+                        instance1_df = pd.DataFrame()
+                        if idx < len(df_list1):
+                            instance1_df = df_list1[idx]
 
+                        # Check if the df_list2 has this index
+                        instance2_df = pd.DataFrame()
+                        if idx < len(df_list2):
+                            instance2_df = df_list2[idx]
 
-                            # Check if the df_list2 has this index
-                            instance2_df = pd.DataFrame()
-                            if idx < len(df_list2):
-                                instance2_df = df_list2[idx]
-
-                            # Set tab color based on Query Hash comparison
-                            tab_color = "red"
-                            if not instance1_df.empty and not instance2_df.empty:
-                                hash1 = instance1_df.iloc[0].get("Query Hash", "")
-                                hash2 = instance2_df.iloc[0].get("Query Hash", "")
-                                if hash1 == hash2:
-                                    tab_color = "green"
-                            elif instance1_df.empty and instance2_df.empty:
+                        # Set tab color based on Query Hash comparison
+                        tab_color = "black"
+                        if not instance1_df.empty and not instance2_df.empty:
+                            hash1 = instance1_df.iloc[0].get("Result Set Hash", "")
+                            hash2 = instance2_df.iloc[0].get("Result Set Hash", "")
+                            if hash1 == hash2:
                                 tab_color = "green"
+                            else:
+                                tab_color = "red"
+                        # elif instance1_df.empty and instance2_df.empty:
+                        #     tab_color = "green"
 
-                            # Label for each instance
-                            label_frame = ttk.Frame(frame)
-                            label_frame.pack(fill='x')
-                            tk.Label(label_frame, text=f"{instance1} ({len(instance1_df)})", font=("Arial", 11, "bold"), fg=tab_color).pack(side='left', padx=10, pady=5)
+                        # Label for each instance
+                        label_frame = ttk.Frame(frame)
+                        label_frame.pack(fill='x')
+                        tk.Label(label_frame, text=f"{instance1} ({len(instance1_df)})", font=("Arial", 11, "bold"), fg=tab_color).pack(side='left', padx=10, pady=5)
+                        if two_instances:
                             tk.Label(label_frame, text=f"{instance2} ({len(instance2_df)})", font=("Arial", 11, "bold"), fg=tab_color).pack(side='left', padx=10, pady=5)
 
-                            # Frames for each grid
-                            grid_frame = ttk.Frame(frame)
-                            grid_frame.pack(fill='both', expand=True)
+                        # Frames for each grid
+                        grid_frame = ttk.Frame(frame)
+                        grid_frame.pack(fill='both', expand=True)
 
-                            # Left grid (tester1)
-                            left_frame = ttk.Frame(grid_frame, width=600, height=500)
-                            left_frame.pack(side='left', fill='both', expand=True)
-                            left_frame.pack_propagate(False)
-                            tree1_scroll_y = ttk.Scrollbar(left_frame, orient="vertical")
-                            tree1_scroll_y.pack(side='right', fill='y')
-                            tree1_scroll_x = ttk.Scrollbar(left_frame, orient="horizontal")
-                            tree1_scroll_x.pack(side='bottom', fill='x')
-                            tree1 = ttk.Treeview(left_frame, columns=list(instance1_df.columns), show='headings',
-                                                yscrollcommand=tree1_scroll_y.set, xscrollcommand=tree1_scroll_x.set, height=20)
-                            
-                            # After creating your Treeview (tree), add this for each column:
-                            for col in instance1_df.columns:
-                                tree1.heading(col, text=col, command=lambda _col=col: treeview_sort_column(tree1, _col, False))
+                        # Left grid (tester1)
+                        left_frame = ttk.Frame(grid_frame, width=600, height=500)
+                        left_frame.pack(side='left', fill='both', expand=True)
+                        left_frame.pack_propagate(False)
+                        tree1_scroll_y = ttk.Scrollbar(left_frame, orient="vertical")
+                        tree1_scroll_y.pack(side='right', fill='y')
+                        tree1_scroll_x = ttk.Scrollbar(left_frame, orient="horizontal")
+                        tree1_scroll_x.pack(side='bottom', fill='x')
+                        tree1 = ttk.Treeview(left_frame, columns=list(instance1_df.columns), show='headings',
+                                            yscrollcommand=tree1_scroll_y.set, xscrollcommand=tree1_scroll_x.set, height=20)
+                        
+                        # After creating your Treeview (tree), add this for each column:
+                        for col in instance1_df.columns:
+                            tree1.heading(col, text=col, command=lambda _col=col: treeview_sort_column(tree1, _col, False))
 
-                            tree1.tag_configure('green_text', background='#d4f4dd')
-                            tree1.tag_configure('red_text', background='#f4d4d4')
+                        tree1.tag_configure('green_text', background='#d4f4dd')
+                        tree1.tag_configure('red_text', background='#f4d4d4')
 
-                            # Build a set of row_hashes from instance2_df
+                        # Build a set of row_hashes from instance2_df
+                        instance2_hashes = set()
+                        if two_instances and not instance2_df.empty:
                             instance2_hashes = set(instance2_df["row_hash"]) if "row_hash" in instance2_df.columns else set()
 
-                            for row_idx, row in instance1_df.iterrows():
-                                values = []
-                                tags = []
-                                for col in instance1_df.columns:
-                                    val = row[col]
-                                    display_val = val
-                                    values.append(display_val)
+                        for row_idx, row in instance1_df.iterrows():
+                            values = []
+                            tags = []
+                            for col in instance1_df.columns:
+                                val = row[col]
+                                display_val = val
+                                values.append(display_val)
+                            if two_instances:    
                                 # Mark row if its row_hash is in instance2_df
                                 if "row_hash" in instance1_df.columns:
                                     if row["row_hash"] in instance2_hashes:
                                         tags.append('green_text')
                                     else:
                                         tags.append('red_text')
-                                tree1.insert('', 'end', iid=row_idx, values=values, tags=tags)
+                            # else:
+                            #     # If only one instance, mark all rows as green
+                            #     tags.append('green_text')
+                            tree1.insert('', 'end', iid=row_idx, values=values, tags=tags)
 
+                        tree1.pack(fill='both', expand=True)
+                        tree1_scroll_y.config(command=tree1.yview)
+                        tree1_scroll_x.config(command=tree1.xview)
+                        for col in instance1_df.columns:
+                            tree1.heading(col, text=col)
+                            tree1.column(col, width=120, stretch=False)
 
-                            tree1.pack(fill='both', expand=True)
-                            tree1_scroll_y.config(command=tree1.yview)
-                            tree1_scroll_x.config(command=tree1.xview)
-                            for col in instance1_df.columns:
-                                tree1.heading(col, text=col)
-                                tree1.column(col, width=120, stretch=False)
-                            # for _, row in instance1_df.iterrows():
-                            #     tree1.insert('', 'end', values=list(row))
-
+                        if two_instances:
                             # Right grid (tester2)
                             right_frame = ttk.Frame(grid_frame, width=600, height=500)
                             right_frame.pack(side='right', fill='both', expand=True)
@@ -929,12 +968,9 @@ class PowerBIRegressionTesterApp:
                             for col in instance2_df.columns:
                                 tree2.heading(col, text=col)
                                 tree2.column(col, width=120, stretch=False)
-                            # for _, row in instance2_df.iterrows():
-                            #     tree2.insert('', 'end', values=list(row))
 
-                            notebook.add(frame, text=tab_name)
+                        notebook.add(frame, text=tab_name)
                                                         
-            tree.bind("<Double-1>", on_double_click)
     
     def view_baseline(self):
         project = self.get_project(self.project_folder_var.get())
@@ -1050,7 +1086,7 @@ class PowerBIRegressionTesterApp:
         df = tester.run_baseline()
         self.show_result(df, 'Baseline')
 
-    def run_instance(self):
+    def create_instance(self):
         project = self.get_project(self.project_folder_var.get())
         if not project:
             messagebox.showerror("Error", "No project selected.")
