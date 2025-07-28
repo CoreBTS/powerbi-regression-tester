@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
+import tksheet
 import os
 import json
 import shutil
@@ -260,42 +261,12 @@ class PowerBIRegressionTesterApp:
             return
         idx = next((i for i, inst in enumerate(project["instances"]) if inst["instance_name"] == instance_name), None)
         if idx is not None:
-            # --- Start: Custom dialog with checkbox ---
-            dialog = tk.Toplevel(self.root)
-            dialog.title("Delete Instance")
-            dialog.grab_set()
-            tk.Label(dialog, text=f"Are you sure you want to delete instance '{instance_name}'?\nThis cannot be undone.").pack(padx=20, pady=10)
-            delete_folder_var = tk.BooleanVar()
-            chk = tk.Checkbutton(dialog, text="Also delete instance folder structure on disk", variable=delete_folder_var)
-            chk.pack(pady=5)
-            btn_frame = tk.Frame(dialog)
-            btn_frame.pack(pady=10)
-            def do_delete():
+            if messagebox.askyesno("Delete Instance", f"Are you sure you want to delete instance '{instance_name}'? This cannot be undone."):
                 del project["instances"][idx]
                 self.save_all_configs()
                 self.update_instance_dropdown()
                 self.instance_dropdown.set("")
-                dialog.destroy()
-                # Delete folder structure if checked
-                if delete_folder_var.get():
-                    # Example: assume folder is under project_folder/instance_name
-                    folder_path = os.path.join(os.getcwd(), 'Projects', self.project_folder_var.get(), 'instance', instance_name)
-                    if os.path.exists(folder_path):
-                        try:
-                            shutil.rmtree(folder_path)
-                            messagebox.showinfo("Deleted", f"Instance '{instance_name}' and its folder were deleted.")
-                        except Exception as e:
-                            messagebox.showwarning("Warning", f"Instance deleted, but failed to delete folder:\n{e}")
-                    else:
-                        messagebox.showinfo("Deleted", f"Instance '{instance_name}' deleted (no folder found).")
-                else:
-                    messagebox.showinfo("Deleted", f"Instance '{instance_name}' deleted.")
-            def do_cancel():
-                dialog.destroy()
-            tk.Button(btn_frame, text="Delete", command=do_delete, fg="red").pack(side="left", padx=10)
-            tk.Button(btn_frame, text="Cancel", command=do_cancel).pack(side="left", padx=10)
-            dialog.wait_window()
-            # --- End: Custom dialog with checkbox ---
+                messagebox.showinfo("Deleted", f"Instance '{instance_name}' deleted.")
 
     def prompt_instance_details(self, default_name=""):
         dialog = tk.Toplevel(self.root)
@@ -676,41 +647,122 @@ class PowerBIRegressionTesterApp:
             frame = ttk.Frame(result_window)
             frame.pack(fill='both', expand=True)
             frame.pack_propagate(False)  # Prevent frame from resizing to fit contents
-            tree_scroll_y = ttk.Scrollbar(frame, orient="vertical")
-            tree_scroll_y.pack(side='right', fill='y')
-            tree_scroll_x = ttk.Scrollbar(frame, orient="horizontal")
-            tree_scroll_x.pack(side='bottom', fill='x')
+            # tree_scroll_y = ttk.Scrollbar(frame, orient="vertical")
+            # tree_scroll_y.pack(side='right', fill='y')
+            # tree_scroll_x = ttk.Scrollbar(frame, orient="horizontal")
+            # tree_scroll_x.pack(side='bottom', fill='x')
 
-            tree = ttk.Treeview(frame, columns=list(df.columns), show='headings',
-                                yscrollcommand=tree_scroll_y.set, xscrollcommand=tree_scroll_x.set, height=20)
-            tree.pack(fill='both', expand=True)  # <-- This enables expansion in both directions
+            # tree = ttk.Treeview(frame, columns=list(df.columns), show='headings',
+            #                     yscrollcommand=tree_scroll_y.set, xscrollcommand=tree_scroll_x.set, height=20)
+            # tree.pack(fill='both', expand=True)  # <-- This enables expansion in both directions
             
-            # After creating your Treeview (tree), add this for each column:
-            for col in df.columns:
-                tree.heading(col, text=col, command=lambda _col=col: treeview_sort_column(tree, _col, False))
+            # # After creating your Treeview (tree), add this for each column:
+            # for col in df.columns:
+            #     tree.heading(col, text=col, command=lambda _col=col: treeview_sort_column(tree, _col, False))
 
-            tree_scroll_y.config(command=tree.yview)
-            tree_scroll_x.config(command=tree.xview)
+            # tree_scroll_y.config(command=tree.yview)
+            # tree_scroll_x.config(command=tree.xview)
 
-            # Store full values for copy
-            cell_values = {}
+            # # Store full values for copy
+            # cell_values = {}
 
-            for col in df.columns:
-                tree.heading(col, text=col)
-                width = 200 if col.lower() == "query" else 100
-                tree.column(col, width=width, stretch=False)
+            # for col in df.columns:
+            #     tree.heading(col, text=col)
+            #     width = 200 if col.lower() == "query" else 100
+            #     tree.column(col, width=width, stretch=False)
 
-            for row_idx, row in df.iterrows():
-                values = []
-                for col in df.columns:
-                    val = row[col]
-                    display_val = val
-                    if col.lower() == "query" and isinstance(val, str):
-                        display_val = val[:20] + "..." if len(val) > 20 else val
-                        display_val = display_val.replace('\n\t', ' ').replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ').replace('\t', ' ')
-                    values.append(display_val)
-                    cell_values[(row_idx, col)] = val  # Store full value
-                tree.insert('', 'end', iid=row_idx, values=values)
+            # Use tksheet to display the DataFrame
+            sheet = tksheet.Sheet(
+                frame,
+                data=df.values.tolist(),
+                headers=list(df.columns),
+                show_x_scrollbar=True,
+                show_y_scrollbar=True
+            )
+
+            def on_cell_select(event):
+                # event["selected"] holds the row and column of the selected cell
+                content = event["selected"] 
+                # Use get_cell_data to retrieve the value of the selected cell
+                cell_value = sheet.get_cell_data(content.row, content.column)
+                print(f"Cell ({content.row}, {content.column}) selected: {cell_value}")
+
+
+            # Enable only read-only and copy bindings
+            sheet.enable_bindings((
+                "single_select", "row_select", "column_select", "drag_select",
+                "column_drag_and_drop", "row_drag_and_drop",
+                "column_resize", "row_resize",
+                "arrowkeys", "right_click_popup_menu",
+                "rc_select", "copy", "cut", "paste", "delete", "undo"
+            ))
+            sheet.extra_bindings("cell_select", on_cell_select) 
+
+            sheet.pack(fill='both', expand=True)
+
+
+            context_menu = tk.Menu(root, tearoff=0)
+            
+            context_menu.add_command(label="Copy", command=lambda: copy_cell())
+            context_menu.add_command(label="Ignore Query", command=lambda: ignore_query())
+            context_menu.add_separator()
+            context_menu.add_command(label="View Query", command=lambda: on_double_click())
+            if two_instances:
+                context_menu.add_command(label="Run Query on Both Instances", command=lambda: run_query())
+            else:
+                context_menu.add_command(label="Run Query", command=lambda: run_query())
+
+            # Remove all right-click menu options except Copy
+            def custom_right_click_menu(event):
+                sheet.popup_menu_delete(0, "end")  # Remove all existing menu items
+                sheet.popup_menu_add_command(label="Copy", command=sheet.copy)
+                sheet.popup_menu.tk_popup(event.x_root, event.y_root)
+
+            sheet.bind("<Button-3>", lambda event: context_menu.post(event.x_root, event.y_root))
+
+            def on_cell_right_click(event):
+                row = sheet.identify_row(event)
+                column = sheet.identify_column(event)
+                print(f"Right-clicked cell at row: {row}, column: {column}")
+                # You can get the cell data if needed
+                cell_value = sheet.get_cell_data(row, column)
+
+                sheet.right_clicked_cell = (row, column)
+                sheet.cell_value = cell_value
+                print(f"Cell value: {cell_value}")
+
+                context_menu.tk_popup(event.x_root, event.y_root)
+
+            # Bind the right-click event to the sheet
+            sheet.bind("<Button-3>", on_cell_right_click) # Use <ButtonPress-2> for Mac OS
+
+
+            # for row_idx, row in df.iterrows():
+            #     values = []
+            #     for col in df.columns:
+            #         val = row[col]
+            #         display_val = val
+            #         if col.lower() == "query" and isinstance(val, str):
+            #             display_val = val[:20] + "..." if len(val) > 20 else val
+            #             display_val = display_val.replace('\n\t', ' ').replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ').replace('\t', ' ')
+            #         values.append(display_val)
+            #         cell_values[(row_idx, col)] = val  # Store full value
+            #     tree.insert('', 'end', iid=row_idx, values=values)
+
+            def copy_cell():
+                # Get the currently selected cell from the sheet
+                if hasattr(sheet, "cell_value"):
+                    cell_value = sheet.cell_value
+                    # value = sheet.get_cell_data(row, column)
+                    result_window.clipboard_clear()
+                    result_window.clipboard_append(str(cell_value))
+                # cell = sheet.get_currently_selected()
+                # row_idx, col_idx = sheet.clicked_cell
+                # if cell and isinstance(cell, tuple) and len(cell) == 2:
+                #     row_idx, col_idx = cell
+                #     value = sheet.get_cell_data(row_idx, col_idx)
+                #     result_window.clipboard_clear()
+                #     result_window.clipboard_append(str(value))
 
             # Context menu for copying cell value
             menu = tk.Menu(result_window, tearoff=0)
@@ -735,14 +787,6 @@ class PowerBIRegressionTesterApp:
                 # Reverse sort next time
                 tree.heading(col, command=lambda: treeview_sort_column(tree, col, not reverse))
 
-            def copy_cell():
-                if hasattr(tree, 'clicked_cell'):
-                    row_idx, col_idx = tree.clicked_cell
-                    col_name = df.columns[col_idx]
-                    value = cell_values.get((row_idx, col_name), "")
-                    result_window.clipboard_clear()
-                    result_window.clipboard_append(str(value))
-
             def on_right_click(event):
                 region = tree.identify("region", event.x, event.y)
                 if region == "cell":
@@ -760,40 +804,46 @@ class PowerBIRegressionTesterApp:
                         #     menu.entryconfig("Ignore Query", state="disabled")
                         menu.tk_popup(event.x_root, event.y_root)
 
-            tree.bind("<Button-3>", on_right_click)  # Right-click
+            # tree.bind("<Button-3>", on_right_click)  # Right-click
 
             # Double-click to show/copy full text
             def on_double_click():
-                if hasattr(tree, 'clicked_cell'):
-                    row_idx, col_idx = tree.clicked_cell
+                if hasattr(sheet, 'right_clicked_cell'):
+                    row_idx, _ = sheet.right_clicked_cell
                     # Always use the "query" column for full text display
-                    if "query" in df.columns:
-                        col_idx = df.columns.get_loc("query")
-                        col_name = "query"
-                    else:
-                        col_name = df.columns[col_idx]
-                    # full_text = df.iloc[tree.index(item[0]), col_idx]
-                    full_text = cell_values.get((row_idx, "Query"), "")
-                    # if col_name.lower() == "query" and isinstance(full_text, str):
-                    # Show full text in a popup with copy option
-                    popup = tk.Toplevel(result_window)
-                    popup.title(f"Full text: {col_name}")
-                    text_box = tk.Text(popup, wrap='word', width=80, height=10)
-                    text_box.insert('1.0', str(full_text))
-                    text_box.pack(expand=True, fill='both')
-                    text_box.config(state='normal')
-                    def copy_to_clipboard():
-                        popup.clipboard_clear()
-                        popup.clipboard_append(str(full_text))
-                    copy_btn = tk.Button(popup, text="Copy", command=copy_to_clipboard)
-                    copy_btn.pack()
+                    # if "query" in df.columns:
+                    #     col_idx = df.columns.get_loc("query")
+                    #     col_name = "query"
+                    # else:
+                    #     col_name = df.columns[col_idx]
+
+                    if "Query" in df.columns:
+                        id_col_idx = df.columns.get_loc("Query")
+                        query = sheet.get_cell_data(row_idx, id_col_idx)
+
+                        if query:
+                            # full_text = df.iloc[tree.index(item[0]), col_idx]
+                            # full_text = cell_values.get((row_idx, "Query"), "")
+                            # if col_name.lower() == "query" and isinstance(full_text, str):
+                            # Show full text in a popup with copy option
+                            popup = tk.Toplevel(result_window)
+                            popup.title(f"Full text Query")
+                            text_box = tk.Text(popup, wrap='word', width=80, height=10)
+                            text_box.insert('1.0', str(query))
+                            text_box.pack(expand=True, fill='both')
+                            text_box.config(state='normal')
+                            def copy_to_clipboard():
+                                popup.clipboard_clear()
+                                popup.clipboard_append(str(query))
+                            copy_btn = tk.Button(popup, text="Copy", command=copy_to_clipboard)
+                            copy_btn.pack()
 
             def ignore_query():
-                if hasattr(tree, 'clicked_cell'):
-                    row_idx, col_idx = tree.clicked_cell
-                    col_name = df.columns[col_idx]
-                    if col_name == "ID":
-                        query_id = cell_values.get((row_idx, col_name), None)
+                if hasattr(sheet, 'right_clicked_cell'):
+                    row_idx, _ = sheet.right_clicked_cell  # Ignore the clicked column
+                    if "ID" in df.columns:
+                        id_col_idx = df.columns.get_loc("ID")
+                        query_id = sheet.get_cell_data(row_idx, id_col_idx)
                         if query_id:
                             # Find the current project
                             project_name = self.project_folder_var.get()
@@ -809,9 +859,8 @@ class PowerBIRegressionTesterApp:
 
 
             def run_query():
-                if hasattr(tree, 'clicked_cell'):
-                            
-                    row_idx, col_idx = tree.clicked_cell
+                if hasattr(sheet, 'right_clicked_cell'):
+                    row_idx, col_idx = sheet.clicked_cell
                     col_name = df.columns[col_idx]
                     # if col_name.lower() == "query":
                     query_text = cell_values.get((row_idx, "Query"), None)
@@ -822,79 +871,6 @@ class PowerBIRegressionTesterApp:
                     instance2 = getattr(result_window, "instance2", None)
                     # Determine if this was a compare (two instances) or just a view (one instance)
                     two_instances = instance1 and instance2
-
-
-                    def on_right_click_query(event):
-                        region = event.widget.identify("region", event.x, event.y)
-                        if region == "cell":
-                            if tree2_list:
-                                tree_x = event.widget
-                                tree1 = None
-                                tree2 = None
-
-                                if tree_x in tree2_list:
-                                    tree2 = tree_x
-                                    tree_x_idx = tree2_list.index(tree_x)
-                                    tree1 = tree1_list[tree_x_idx] if tree1_list else None
-                                else:
-                                    tree1 = tree_x
-                                    tree_x_idx = tree1_list.index(tree_x)
-                                    tree2 = tree2_list[tree_x_idx] if tree2_list else None
-
-                                region = tree_x.identify("region", event.x, event.y)
-                                left_frame.tree1 = tree1
-                                right_frame.tree2 = tree2
-    
-                                query_menu.tk_popup(event.x_root, event.y_root)
-
-                    def compare_row():
-                        if hasattr(left_frame, 'tree1') and hasattr(right_frame, 'tree2'):
-                            tree1 = left_frame.tree1
-                            tree2 = right_frame.tree2
-
-                            if tree1 and tree2:
-                                row1_values = None              
-                                row2_values = None
-
-                                selected1 = tree1.selection()
-                                selected2 = tree2.selection()
-                                if selected1 and len(selected1) == 1 and selected2 and len(selected2) == 1:
-                                    row_id1 = selected1[0]
-                                    row1_values = tree1.item(row_id1, "values")
-                                    row_id2 = selected2[0]
-                                    row2_values = tree2.item(row_id2, "values") 
-                                else:
-                                    messagebox.showerror("Error", "Please select one row from each tree to compare.")
-                                    return
-
-                                if row1_values and row2_values:
-                                    row_id2 = selected2[0]
-                                    # Get row data from both trees
-                                    # values1 = tree1.item(row_id1, "values")
-                                    # values2 = tree2.item(row_id2, "values")
-                                    columns = tree1["columns"]
-
-                                    # Create new window for comparison
-                                    compare_popup = tk.Toplevel()
-                                    compare_popup.title("Row Comparison")
-                                    compare_popup.geometry("1000x800")
-                                    frame = ttk.Frame(compare_popup)
-                                    frame.pack(fill='both', expand=True)
-
-                                    compare_tree = ttk.Treeview(frame, columns=("Column", "Query 1 Value", "Query 2 Value"), show='headings')
-                                    compare_tree.heading("Column", text="Column")
-                                    compare_tree.heading("Query 1 Value", text="Query 1 Value")
-                                    compare_tree.heading("Query 2 Value", text="Query 2 Value")
-                                    compare_tree.pack(fill='both', expand=True)
-
-                                    compare_tree.tag_configure('green_row', background='#d4f4dd')
-                                    compare_tree.tag_configure('red_row', background='#f4d4d4')
-
-                                    for idx, col in enumerate(columns):
-                                        val1 = row1_values[idx] if idx < len(row1_values) else ""
-                                        val2 = row2_values[idx] if idx < len(row2_values) else ""
-                                        tag = 'green_row' if val1 == val2 else 'red_row'
-                                        compare_tree.insert('', 'end', values=(col, val1, val2), tags=(tag,))
 
                     # if not is_compare:
                     #     messagebox.showerror("Error", "This feature is only available when comparing two instances.")
@@ -929,6 +905,40 @@ class PowerBIRegressionTesterApp:
                     if (not df_list1 or all(df.empty for df in df_list1)) and (not df_list2 or all(df.empty for df in df_list2)):
                         messagebox.showinfo("Query Results", "No results returned for this query on either instance.")
                         return
+                    
+                    # Prompt user for column and value to filter on
+                    filter_col = simpledialog.askstring("Filter", "Enter column name to filter on:", parent=self.root)
+                    if not filter_col:
+                        return
+                    filter_val = simpledialog.askstring("Filter", f"Enter value for '{filter_col}':", parent=self.root)
+                    if filter_val is None:
+                        return
+
+                    # Filter both lists to only include DataFrames where the filter matches
+                    filtered1 = [df[df[filter_col] == filter_val] for df in df_list1 if filter_col in df.columns and not df[df[filter_col] == filter_val].empty]
+                    filtered2 = [df[df[filter_col] == filter_val] for df in df_list2 if filter_col in df.columns and not df[df[filter_col] == filter_val].empty]
+
+                    # Take the first matching row from each (if any)
+                    row1 = filtered1[0].iloc[0] if filtered1 and not filtered1[0].empty else None
+                    row2 = filtered2[0].iloc[0] if filtered2 and not filtered2[0].empty else None
+
+                    if row1 is None or row2 is None:
+                        messagebox.showinfo("Compare", "Could not find matching row in one or both instances.")
+                        return
+
+                    # Compare columns
+                    diffs = []
+                    for col in filtered1[0].columns:
+                        val1 = row1[col]
+                        val2 = row2[col] if col in filtered2[0].columns else None
+                        if val1 != val2:
+                            diffs.append((col, val1, val2))
+
+                    if not diffs:
+                        messagebox.showinfo("Compare", "Rows are identical.")
+                    else:
+                        diff_text = "\n".join([f"{col}: {val1} != {val2}" for col, val1, val2 in diffs])
+                        messagebox.showinfo("Differences", diff_text)
 
                     compare_window = tk.Toplevel(self.root)
                     if two_instances:
@@ -940,15 +950,7 @@ class PowerBIRegressionTesterApp:
                     notebook = ttk.Notebook(compare_window)
                     notebook.pack(fill='both', expand=True)
 
-                    if two_instances:
-                        # Context menu for copying cell value
-                        query_menu = tk.Menu(result_window, tearoff=0)
-                        query_menu.add_command(label="Compare Rows", command=lambda: compare_row())
-
                     num_tabs = max(len(df_list1), len(df_list2))
-                    tree1_list = []  # Add this before your loop
-                    tree2_list = []  # Add this before your loop
-                    
                     for idx in range(num_tabs):
                         tab_name = f"Result {idx+1}"
                         frame = ttk.Frame(notebook, width=1200, height=500)
@@ -998,8 +1000,6 @@ class PowerBIRegressionTesterApp:
                         tree1_scroll_x.pack(side='bottom', fill='x')
                         tree1 = ttk.Treeview(left_frame, columns=list(instance1_df.columns), show='headings',
                                             yscrollcommand=tree1_scroll_y.set, xscrollcommand=tree1_scroll_x.set, height=20)
-                        tree1.bind("<Button-3>", on_right_click_query)  # Right-click
-                        tree1_list.append(tree1)
                         
                         # After creating your Treeview (tree), add this for each column:
                         for col in instance1_df.columns:
@@ -1050,13 +1050,6 @@ class PowerBIRegressionTesterApp:
                             tree2_scroll_x.pack(side='bottom', fill='x')
                             tree2 = ttk.Treeview(right_frame, columns=list(instance2_df.columns), show='headings',
                                                 yscrollcommand=tree2_scroll_y.set, xscrollcommand=tree2_scroll_x.set, height=20)
-                            tree2.bind("<Button-3>", on_right_click_query)  # Right-click
-                            tree2_list.append(tree2)
-
-                            # tree1.tree1_list = tree1_list
-                            # tree1.tree2_list = tree2_list
-                            # tree2.tree1_list = tree1_list
-                            # tree2.tree2_list = tree2_list
 
                             # After creating your Treeview (tree), add this for each column:
                             for col in instance2_df.columns:
@@ -1089,9 +1082,6 @@ class PowerBIRegressionTesterApp:
                             for col in instance2_df.columns:
                                 tree2.heading(col, text=col)
                                 tree2.column(col, width=120, stretch=False)
-
-                        
-
 
                         notebook.add(frame, text=tab_name)
                                                         
