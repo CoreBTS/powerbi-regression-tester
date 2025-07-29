@@ -1078,10 +1078,10 @@ class PowerBIRegressionTester:
                             #     row_count += f", {len(result_df)}"
                             # else:
                             #     row_count = str(len(result_df))
-                            result_df['row_hash'] = result_df.apply(self.row_hash, axis=1)
-                            result_df = result_df.sort_values('row_hash').reset_index(drop=True)
+                            result_df['Row Hash'] = result_df.apply(self.row_hash, axis=1)
+                            result_df = result_df.sort_values('Row Hash').reset_index(drop=True)
 
-                            row_hashes = '|'.join(result_df['row_hash'].tolist())
+                            row_hashes = '|'.join(result_df['Row Hash'].tolist())
                             combined_row_hash = hashlib.sha256(row_hashes.encode('utf-8')).hexdigest()
                             result_df['Result Set Hash'] = combined_row_hash
                     else:

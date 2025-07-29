@@ -246,6 +246,8 @@ class PowerBIRegressionTesterApp:
         self.pbi_report_folder_var.set(pbi_report_folder)
         self.update_instance_dropdown()
 
+        PowerBIRegressionTester.create_project_skeleton(new_name)
+
     def load_config_to_fields(self, project_name):
         project = self.get_project(project_name)
         self.project_folder_var.set(project_name)
@@ -355,25 +357,27 @@ class PowerBIRegressionTesterApp:
             dialog.wait_window()
             # --- End: Custom dialog with checkbox ---
 
-    def prompt_instance_details(self, default_name=""):
+    def prompt_instance_details(self, instance=None):
+        instance = instance or {}
         dialog = tk.Toplevel(self.root)
-        dialog.title("Instance Details")
+        dialog.title(f"{instance.get('instance_name', 'Baseline')} Details")
         dialog.grab_set()
         dialog.resizable(False, False)
 
         # Variables
-        instance_name_var = tk.StringVar(value=default_name)
-        server_name_var = tk.StringVar()
-        database_name_var = tk.StringVar()
-        user_id_var = tk.StringVar()
-        password_var = tk.StringVar()
-        interactive_var = tk.BooleanVar(value=False)
-        xmla_endpoint_var = tk.BooleanVar(value=False)
-        local_instance_var = tk.BooleanVar(value=False)
+        instance_name_var = tk.StringVar(value=instance.get("instance_name", "Baseline"))
+        server_name_var = tk.StringVar(value=instance.get("server_name", ""))
+        database_name_var = tk.StringVar(value=instance.get("database_name", ""))
+        user_id_var = tk.StringVar(value=instance.get("user_id", ""))
+        password_var = tk.StringVar(value=self.decrypt_for_user(instance.get("password", "")))
+        interactive_var = tk.BooleanVar(value=instance.get("interactive", False))
+        xmla_endpoint_var = tk.BooleanVar(value=instance.get("xmla_endpoint", False))
+        local_instance_var = tk.BooleanVar(value=instance.get("local_instance", False))
 
         # Layout
         tk.Label(dialog, text="Instance Name:").grid(row=0, column=0, sticky="e")
         name_entry = tk.Entry(dialog, textvariable=instance_name_var, width=40)
+        name_entry.config(state="disabled" if instance.get("instance_name", "Baseline") == 'Baseline' else "normal")
         name_entry.grid(row=0, column=1, padx=5, pady=2)
 
         tk.Label(dialog, text="Server Name:").grid(row=1, column=0, sticky="e")
@@ -403,14 +407,10 @@ class PowerBIRegressionTesterApp:
 
         # Disable/enable fields based on checkbox
         def toggle_fields(*args):
-            # Only disable User ID and Password if Interactive is checked
             user_entry.config(state="disabled" if interactive_var.get() else "normal")
             pass_entry.config(state="disabled" if interactive_var.get() else "normal")
-            # Server and DB always enabled
             server_entry.config(state="normal")
             db_entry.config(state="normal")
-
-            # Disable/clear XMLA and Interactive if Local Instance is checked
             if local_instance_var.get():
                 xmla_endpoint_var.set(False)
                 interactive_var.set(False)
@@ -432,16 +432,13 @@ class PowerBIRegressionTesterApp:
             if not result["instance_name"]:
                 messagebox.showerror("Error", "Instance Name is required.", parent=dialog)
                 return
-            
             if not (interactive_var.get() or xmla_endpoint_var.get() or local_instance_var.get()):
                 messagebox.showerror("Error", "Either 'Interactive' or 'XMLA Endpoint' must be checked.", parent=dialog)
                 return
-
             result["server_name"] = server_name_var.get().strip()
             result["database_name"] = database_name_var.get().strip()
             result["xmla_endpoint"] = xmla_endpoint_var.get()
             result["local_instance"] = local_instance_var.get()
-
             if not result["interactive"]:
                 result["user_id"] = user_id_var.get().strip()
                 result["password"] = self.encrypt_for_user(password_var.get())
@@ -472,7 +469,7 @@ class PowerBIRegressionTesterApp:
             return
 
         # Prompt with current values
-        edited = self.prompt_instance_details_prefilled(instance)
+        edited = self.prompt_instance_details(instance)
         if not edited:
             return
         # Overwrite the instance
@@ -494,7 +491,7 @@ class PowerBIRegressionTesterApp:
         if not instance:
             messagebox.showerror("Error", "No baseline instance found.")
             return
-        edited = self.prompt_instance_details_prefilled(instance)
+        edited = self.prompt_instance_details(instance)
         if not edited:
             return
         idx = next((i for i, inst in enumerate(project["instances"]) if inst["instance_name"].lower() == "baseline"), None)
@@ -506,111 +503,111 @@ class PowerBIRegressionTesterApp:
                 self.instance_dropdown.set(edited["instance_name"])
             messagebox.showinfo("Saved", "Baseline instance updated.")
 
-    def prompt_instance_details_prefilled(self, instance):
-        dialog = tk.Toplevel(self.root)
-        dialog.title("Edit Instance Details")
-        dialog.grab_set()
-        dialog.resizable(False, False)
+    # def prompt_instance_details_prefilled(self, instance):
+    #     dialog = tk.Toplevel(self.root)
+    #     dialog.title("Edit Instance Details")
+    #     dialog.grab_set()
+    #     dialog.resizable(False, False)
 
-        # Variables
-        instance_name_var = tk.StringVar(value=instance.get("instance_name", ""))
-        server_name_var = tk.StringVar(value=instance.get("server_name", ""))
-        database_name_var = tk.StringVar(value=instance.get("database_name", ""))
-        user_id_var = tk.StringVar(value=instance.get("user_id", ""))
-        password_var = tk.StringVar(value=self.decrypt_for_user(instance.get("password", "")))
-        interactive_var = tk.BooleanVar(value=instance.get("interactive", False))
-        xmla_endpoint_var = tk.BooleanVar(value=instance.get("xmla_endpoint", False) if "instance" in locals() else False)
-        local_instance_var = tk.BooleanVar(value=instance.get("local_instance", False) if "instance" in locals() else False)
+    #     # Variables
+    #     instance_name_var = tk.StringVar(value=instance.get("instance_name", ""))
+    #     server_name_var = tk.StringVar(value=instance.get("server_name", ""))
+    #     database_name_var = tk.StringVar(value=instance.get("database_name", ""))
+    #     user_id_var = tk.StringVar(value=instance.get("user_id", ""))
+    #     password_var = tk.StringVar(value=self.decrypt_for_user(instance.get("password", "")))
+    #     interactive_var = tk.BooleanVar(value=instance.get("interactive", False))
+    #     xmla_endpoint_var = tk.BooleanVar(value=instance.get("xmla_endpoint", False) if "instance" in locals() else False)
+    #     local_instance_var = tk.BooleanVar(value=instance.get("local_instance", False) if "instance" in locals() else False)
 
-        # Layout
-        tk.Label(dialog, text="Instance Name:").grid(row=0, column=0, sticky="e")
-        name_entry = tk.Entry(dialog, textvariable=instance_name_var, width=40)
-        name_entry.config(state="disabled" if instance.get("instance_name", "") == 'Baseline' else "normal")
-        name_entry.grid(row=0, column=1, padx=5, pady=2)
+    #     # Layout
+    #     tk.Label(dialog, text="Instance Name:").grid(row=0, column=0, sticky="e")
+    #     name_entry = tk.Entry(dialog, textvariable=instance_name_var, width=40)
+    #     name_entry.config(state="disabled" if instance.get("instance_name", "") == 'Baseline' else "normal")
+    #     name_entry.grid(row=0, column=1, padx=5, pady=2)
 
-        tk.Label(dialog, text="Server Name:").grid(row=1, column=0, sticky="e")
-        server_entry = tk.Entry(dialog, textvariable=server_name_var, width=40)
-        server_entry.grid(row=1, column=1, padx=5, pady=2)
+    #     tk.Label(dialog, text="Server Name:").grid(row=1, column=0, sticky="e")
+    #     server_entry = tk.Entry(dialog, textvariable=server_name_var, width=40)
+    #     server_entry.grid(row=1, column=1, padx=5, pady=2)
 
-        tk.Label(dialog, text="Database Name:").grid(row=2, column=0, sticky="e")
-        db_entry = tk.Entry(dialog, textvariable=database_name_var, width=40)
-        db_entry.grid(row=2, column=1, padx=5, pady=2)
+    #     tk.Label(dialog, text="Database Name:").grid(row=2, column=0, sticky="e")
+    #     db_entry = tk.Entry(dialog, textvariable=database_name_var, width=40)
+    #     db_entry.grid(row=2, column=1, padx=5, pady=2)
 
-        tk.Label(dialog, text="User ID:").grid(row=3, column=0, sticky="e")
-        user_entry = tk.Entry(dialog, textvariable=user_id_var, width=40)
-        user_entry.grid(row=3, column=1, padx=5, pady=2)
+    #     tk.Label(dialog, text="User ID:").grid(row=3, column=0, sticky="e")
+    #     user_entry = tk.Entry(dialog, textvariable=user_id_var, width=40)
+    #     user_entry.grid(row=3, column=1, padx=5, pady=2)
 
-        tk.Label(dialog, text="Password:").grid(row=4, column=0, sticky="e")
-        pass_entry = tk.Entry(dialog, textvariable=password_var, width=40, show="*")
-        pass_entry.grid(row=4, column=1, padx=5, pady=2)
+    #     tk.Label(dialog, text="Password:").grid(row=4, column=0, sticky="e")
+    #     pass_entry = tk.Entry(dialog, textvariable=password_var, width=40, show="*")
+    #     pass_entry.grid(row=4, column=1, padx=5, pady=2)
 
-        interactive_chk = tk.Checkbutton(dialog, text="Interactive", variable=interactive_var)
-        interactive_chk.grid(row=5, column=0, columnspan=2, pady=5)
+    #     interactive_chk = tk.Checkbutton(dialog, text="Interactive", variable=interactive_var)
+    #     interactive_chk.grid(row=5, column=0, columnspan=2, pady=5)
 
-        xmla_chk = tk.Checkbutton(dialog, text="XMLA Endpoint", variable=xmla_endpoint_var)
-        xmla_chk.grid(row=6, column=0, columnspan=2, pady=5)
+    #     xmla_chk = tk.Checkbutton(dialog, text="XMLA Endpoint", variable=xmla_endpoint_var)
+    #     xmla_chk.grid(row=6, column=0, columnspan=2, pady=5)
 
-        local_chk = tk.Checkbutton(dialog, text="Local Instance", variable=local_instance_var)
-        local_chk.grid(row=7, column=0, columnspan=2, pady=5)
+    #     local_chk = tk.Checkbutton(dialog, text="Local Instance", variable=local_instance_var)
+    #     local_chk.grid(row=7, column=0, columnspan=2, pady=5)
 
-        # Disable/enable fields based on checkbox
-        def toggle_fields(*args):
-            # Only disable User ID and Password if Interactive is checked
-            user_entry.config(state="disabled" if interactive_var.get() else "normal")
-            pass_entry.config(state="disabled" if interactive_var.get() else "normal")
-            # Server Name and Database Name always enabled
-            server_entry.config(state="normal")
-            db_entry.config(state="normal")
+    #     # Disable/enable fields based on checkbox
+    #     def toggle_fields(*args):
+    #         # Only disable User ID and Password if Interactive is checked
+    #         user_entry.config(state="disabled" if interactive_var.get() else "normal")
+    #         pass_entry.config(state="disabled" if interactive_var.get() else "normal")
+    #         # Server Name and Database Name always enabled
+    #         server_entry.config(state="normal")
+    #         db_entry.config(state="normal")
 
-            # Disable/clear XMLA and Interactive if Local Instance is checked
-            if local_instance_var.get():
-                xmla_endpoint_var.set(False)
-                interactive_var.set(False)
-                xmla_chk.config(state="disabled")
-                interactive_chk.config(state="disabled")
-            else:
-                xmla_chk.config(state="normal")
-                interactive_chk.config(state="normal")
+    #         # Disable/clear XMLA and Interactive if Local Instance is checked
+    #         if local_instance_var.get():
+    #             xmla_endpoint_var.set(False)
+    #             interactive_var.set(False)
+    #             xmla_chk.config(state="disabled")
+    #             interactive_chk.config(state="disabled")
+    #         else:
+    #             xmla_chk.config(state="normal")
+    #             interactive_chk.config(state="normal")
 
-        interactive_var.trace_add("write", toggle_fields)
-        local_instance_var.trace_add("write", toggle_fields)
-        toggle_fields()  # Set initial state
+    #     interactive_var.trace_add("write", toggle_fields)
+    #     local_instance_var.trace_add("write", toggle_fields)
+    #     toggle_fields()  # Set initial state
 
-        # Buttons
-        result = {}
-        def on_ok():
-            result["instance_name"] = instance_name_var.get().strip()
-            result["interactive"] = interactive_var.get()
-            if not result["instance_name"]:
-                messagebox.showerror("Error", "Instance Name is required.", parent=dialog)
-                return
+    #     # Buttons
+    #     result = {}
+    #     def on_ok():
+    #         result["instance_name"] = instance_name_var.get().strip()
+    #         result["interactive"] = interactive_var.get()
+    #         if not result["instance_name"]:
+    #             messagebox.showerror("Error", "Instance Name is required.", parent=dialog)
+    #             return
 
-            if not (interactive_var.get() or xmla_endpoint_var.get() or local_instance_var.get()):
-                messagebox.showerror("Error", "Either 'Interactive' or 'XMLA Endpoint' must be checked.", parent=dialog)
-                return
+    #         if not (interactive_var.get() or xmla_endpoint_var.get() or local_instance_var.get()):
+    #             messagebox.showerror("Error", "Either 'Interactive' or 'XMLA Endpoint' must be checked.", parent=dialog)
+    #             return
             
-            result["server_name"] = server_name_var.get().strip()
-            result["database_name"] = database_name_var.get().strip()
-            result["xmla_endpoint"] = xmla_endpoint_var.get()
-            result["local_instance"] = local_instance_var.get()
+    #         result["server_name"] = server_name_var.get().strip()
+    #         result["database_name"] = database_name_var.get().strip()
+    #         result["xmla_endpoint"] = xmla_endpoint_var.get()
+    #         result["local_instance"] = local_instance_var.get()
 
-            if not result["interactive"]:
-                result["user_id"] = user_id_var.get().strip()
-                result["password"] = self.encrypt_for_user(password_var.get())
-                if not all([result["server_name"], result["database_name"]]):
-                    messagebox.showerror("Error", "All fields are required unless Interactive is checked.", parent=dialog)
-                    return
-            dialog.destroy()
+    #         if not result["interactive"]:
+    #             result["user_id"] = user_id_var.get().strip()
+    #             result["password"] = self.encrypt_for_user(password_var.get())
+    #             if not all([result["server_name"], result["database_name"]]):
+    #                 messagebox.showerror("Error", "All fields are required unless Interactive is checked.", parent=dialog)
+    #                 return
+    #         dialog.destroy()
 
-        def on_cancel():
-            result.clear()
-            dialog.destroy()
+    #     def on_cancel():
+    #         result.clear()
+    #         dialog.destroy()
 
-        tk.Button(dialog, text="OK", command=on_ok).grid(row=7, column=0, pady=10)
-        tk.Button(dialog, text="Cancel", command=on_cancel).grid(row=7, column=1, pady=10)
+    #     tk.Button(dialog, text="OK", command=on_ok).grid(row=7, column=0, pady=10)
+    #     tk.Button(dialog, text="Cancel", command=on_cancel).grid(row=7, column=1, pady=10)
 
-        dialog.wait_window()
-        return result if result else None
+    #     dialog.wait_window()
+    #     return result if result else None
 
     def save_instance_to_project(self, project_name, instance):
         project = self.get_project(project_name)
@@ -736,8 +733,8 @@ class PowerBIRegressionTesterApp:
                     if two_instances:
                         if "Query Hash" in display_df.columns and "Query Hash Baseline" in display_df.columns:
                             tag = "diff" if row["Query Hash"] != row["Query Hash Baseline"] else "same"
-                        elif "row_hash" in display_df.columns and "row_hash_baseline" in display_df.columns:
-                            tag = "diff" if row["row_hash"] != row["row_hash_baseline"] else "same"
+                        elif "Row Hash" in display_df.columns and "Row Hash_baseline" in display_df.columns:
+                            tag = "diff" if row["Row Hash"] != row["Row Hash_baseline"] else "same"
                         else:
                             tag = "diff" if len(set([str(row[col]) for col in columns])) > 1 else "same"
                     values = [
@@ -1141,7 +1138,7 @@ class PowerBIRegressionTesterApp:
                         # Build a set of row_hashes from instance2_df
                         instance2_hashes = set()
                         if two_instances and not instance2_df.empty:
-                            instance2_hashes = set(instance2_df["row_hash"]) if "row_hash" in instance2_df.columns else set()
+                            instance2_hashes = set(instance2_df["Row Hash"]) if "Row Hash" in instance2_df.columns else set()
 
                         for row_idx, row in instance1_df.iterrows():
                             values = []
@@ -1151,9 +1148,9 @@ class PowerBIRegressionTesterApp:
                                 display_val = val
                                 values.append(display_val)
                             if two_instances:    
-                                # Mark row if its row_hash is in instance2_df
-                                if "row_hash" in instance1_df.columns:
-                                    if row["row_hash"] in instance2_hashes:
+                                # Mark row if its Row Hash is in instance2_df
+                                if "Row Hash" in instance1_df.columns:
+                                    if row["Row Hash"] in instance2_hashes:
                                         tags.append('green_text')
                                     else:
                                         tags.append('red_text')
@@ -1196,7 +1193,7 @@ class PowerBIRegressionTesterApp:
                             tree2.tag_configure('red_text', background='#f4d4d4')
 
                             # Build a set of row_hashes from instance2_df
-                            instance1_hashes = set(instance1_df["row_hash"]) if "row_hash" in instance1_df.columns else set()
+                            instance1_hashes = set(instance1_df["Row Hash"]) if "Row Hash" in instance1_df.columns else set()
 
                             for row_idx, row in instance2_df.iterrows():
                                 values = []
@@ -1205,9 +1202,9 @@ class PowerBIRegressionTesterApp:
                                     val = row[col]
                                     display_val = val
                                     values.append(display_val)
-                                # Mark row if its row_hash is in instance1_df
-                                if "row_hash" in instance2_df.columns:
-                                    if row["row_hash"] in instance1_hashes:
+                                # Mark row if its Row Hash is in instance1_df
+                                if "Row Hash" in instance2_df.columns:
+                                    if row["Row Hash"] in instance1_hashes:
                                         tags.append('green_text')
                                     else:
                                         tags.append('red_text')
@@ -1311,7 +1308,7 @@ class PowerBIRegressionTesterApp:
 
         if not instance:
             # No baseline exists, prompt for details
-            instance = self.prompt_instance_details("Baseline")
+            instance = self.prompt_instance_details()
             if not instance:
                 return
             self.save_instance_to_project(self.project_folder_var.get(), instance)
@@ -1354,7 +1351,7 @@ class PowerBIRegressionTesterApp:
         prefill["instance_name"] = ""  # Always leave instance name empty
 
         # Prompt for instance details, prefilled from baseline if available
-        instance_data = self.prompt_instance_details_prefilled(prefill)
+        instance_data = self.prompt_instance_details(prefill)
         if not instance_data:
             return
 
