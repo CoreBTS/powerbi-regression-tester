@@ -25,7 +25,8 @@ class PowerBIRegressionTesterApp:
         self.instance_name_var = tk.StringVar()
 
         # Widgets
-        self.setup_widgets()
+        # self.setup_widgets()
+        self.setup_main_screen()
         self.update_project_folder_dropdown()
         if self.project_folder_dropdown['values']:
             self.load_config_to_fields(self.project_folder_dropdown.get())
@@ -52,7 +53,64 @@ class PowerBIRegressionTesterApp:
             return decrypted.decode("utf-8")
         except Exception:
             return ""  # or raise
-        
+
+    def setup_main_screen(self):
+        # Clear existing widgets if needed
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # --- Project Selection Frame ---
+        project_frame = ttk.LabelFrame(self.root, text="Project")
+        project_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+        project_frame.columnconfigure(1, weight=1)
+
+        ttk.Label(project_frame, text="Project:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
+        self.project_folder_dropdown = ttk.Combobox(project_frame, textvariable=self.project_folder_var, width=40, state="readonly")
+        self.project_folder_dropdown.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
+        self.project_folder_dropdown.bind("<<ComboboxSelected>>", self.on_project_folder_select)
+        ttk.Button(project_frame, text="New", command=self.create_new_config).grid(row=0, column=2, padx=2, sticky='w')
+        ttk.Button(project_frame, text="Save", command=self.save_current_config).grid(row=0, column=3, padx=2, sticky='w')
+        ttk.Button(project_frame, text="Delete", command=self.delete_current_config).grid(row=0, column=4, padx=2, sticky='w')
+
+        # --- PBI Report Folder ---
+        ttk.Label(project_frame, text="PBI Report Folder (optional):").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+        entry = ttk.Entry(project_frame, textvariable=self.pbi_report_folder_var, width=60)
+        entry.grid(row=1, column=1, padx=5, pady=2, sticky="ew")
+        ttk.Button(project_frame, text="Browse", command=lambda v=self.pbi_report_folder_var: self.browse_folder(v)).grid(row=1, column=2, sticky='w')
+
+        # --- Instance Selection Frame ---
+        instance_frame = ttk.LabelFrame(self.root, text="Instance")
+        instance_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        instance_frame.columnconfigure(1, weight=1)
+
+        ttk.Label(instance_frame, text="Instance:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
+        self.instance_dropdown = ttk.Combobox(instance_frame, textvariable=self.instance_name_var, width=40, state="readonly")
+        self.instance_dropdown.grid(row=0, column=1, padx=5, pady=2, sticky="ew")
+        ttk.Button(instance_frame, text="Create", command=self.create_instance).grid(row=0, column=2, padx=2, sticky='w')
+        ttk.Button(instance_frame, text="Edit", command=self.edit_selected_instance).grid(row=0, column=3, padx=2, sticky='w')
+        ttk.Button(instance_frame, text="Delete", command=self.delete_current_instance).grid(row=0, column=4, padx=2, sticky='w')
+        ttk.Button(instance_frame, text="View", command=self.view_instance).grid(row=0, column=5, padx=2, sticky='w')
+
+        # --- Action Buttons Frame ---
+        action_frame = ttk.LabelFrame(self.root, text="Actions")
+        action_frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
+        action_frame.columnconfigure(0, weight=1)
+
+        ttk.Button(action_frame, text="Create Baseline", command=self.run_baseline).grid(row=0, column=0, padx=5, pady=5, sticky='w')
+        ttk.Button(action_frame, text="Edit Baseline", command=self.edit_baseline).grid(row=0, column=1, padx=5, pady=5, sticky='w')
+        ttk.Button(action_frame, text="View Baseline", command=self.view_baseline).grid(row=0, column=2, padx=5, pady=5, sticky='w')
+        ttk.Button(action_frame, text="Compare", command=self.run_compare).grid(row=0, column=3, padx=5, pady=5, sticky='w')
+        ttk.Button(action_frame, text="Compare Instance To", command=self.compare_to_dialog).grid(row=0, column=4, padx=5, pady=5, sticky='w')
+        ttk.Button(action_frame, text="Update Selected Instance", command=self.run_selected_instance).grid(row=0, column=5, padx=5, pady=5, sticky='w')
+
+        # --- Status Bar ---
+        self.status_var = tk.StringVar()
+        status_bar = ttk.Label(self.root, textvariable=self.status_var, relief="sunken", anchor="w")
+        status_bar.grid(row=99, column=0, sticky="ew", padx=0, pady=0)
+
+        # Make the main window expand columns
+        self.root.columnconfigure(0, weight=1)
+
     def setup_widgets(self):
         tk.Label(self.root, text="Project:").grid(row=0, column=0, sticky='e')
         self.project_folder_dropdown = ttk.Combobox(self.root, textvariable=self.project_folder_var, width=40, state="readonly")
@@ -648,71 +706,155 @@ class PowerBIRegressionTesterApp:
 
     def show_result(self, df, instance1=None, instance2=None):
         if df is not None and not df.empty:
-            result_window = tk.Toplevel(root)
+            # if "Query Hash" in df.columns and "Query Hash Baseline" in df.columns:
+            #     df["Hash Match"] = df["Query Hash"] == df["Query Hash Baseline"]
+            #     df["Hash Match"] = df["Hash Match"].replace({True: "Match", False: "Mismatch"})
+            diff_count = df["Hash Match"].sum() if "Hash Match" in df.columns else 0
+            total_count = len(df)
+            diff_summary = f"Differences found: {diff_count} of {total_count}"
 
-            # Store instance names on the window for later use
+            result_window = tk.Toplevel(self.root)
             result_window.instance1 = instance1
             result_window.instance2 = instance2
-
-            result_window.geometry("1400x700")  # Set initial size (width x height)
+            result_window.geometry("1400x700")
 
             two_instances = instance1 and instance2
 
+            def on_view_all_toggle():
+                # Remove all rows from the tree
+                for item in tree.get_children():
+                    tree.delete(item)
+                # Choose which DataFrame to display
+                if two_instances and view_all_var.get():
+                    display_df = df
+                else:
+                    display_df = df[df["Hash Match"] == False] if "Hash Match" in df.columns else df
+
+                # Re-insert rows
+                for row_idx, row in display_df.iterrows():
+                    tag = "no_compare"
+                    if two_instances:
+                        if "Query Hash" in display_df.columns and "Query Hash Baseline" in display_df.columns:
+                            tag = "diff" if row["Query Hash"] != row["Query Hash Baseline"] else "same"
+                        elif "row_hash" in display_df.columns and "row_hash_baseline" in display_df.columns:
+                            tag = "diff" if row["row_hash"] != row["row_hash_baseline"] else "same"
+                        else:
+                            tag = "diff" if len(set([str(row[col]) for col in columns])) > 1 else "same"
+                    values = [
+                        (
+                            str(row[col])[:20] + "..." if col.lower() == "query" and len(str(row[col])) > 20 else str(row[col])
+                        ).replace('\n\t', ' ').replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ').replace('\t', ' ')
+                        for col in columns
+                    ]
+                    tree.insert("", "end", iid=row_idx, values=values, tags=(tag,))
+                # Optionally update status bar
+                # status = "Showing all queries" if view_all_var.get() else "Showing filtered queries"
+                # status_var.set(status)
+
+
+            # --- Header ---
+            header_frame = ttk.Frame(result_window)
+            header_frame.pack(fill='x', padx=10, pady=10)
+
+            result_window.title(f"Results: {instance1} vs {instance2} ({len(df)} rows)")
+            ttk.Label(header_frame, text=f"Instance 1: {instance1}", font=("Arial", 12, "bold")).pack(side='left', padx=10)
+            ttk.Label(header_frame, text=f"Instance 2: {instance2}", font=("Arial", 12, "bold")).pack(side='left', padx=10)
+            ttk.Label(header_frame, text=f"{diff_summary}", font=("Arial", 12)).pack(side='right', padx=10)
+            # Add "View All Queries" checkbox
+            view_all_var = tk.BooleanVar(value=False)
+            view_all_checkbox = ttk.Checkbutton(header_frame, text="View All Queries", variable=view_all_var, command=lambda: on_view_all_toggle())
+            view_all_checkbox.pack(side='right', padx=10)
+
             if two_instances:
-                result_window.title(f"Compare Results: {instance1} vs {instance2} ({len(df)} rows)")
-                label_frame = ttk.Frame(result_window)
-                label_frame.pack(fill='x')
-                tk.Label(label_frame, text=f"Instance 1: {instance1}", font=("Arial", 12, "bold")).pack(side='left', padx=10, pady=5)
-                tk.Label(label_frame, text=f"Instance 2: {instance2}", font=("Arial", 12, "bold")).pack(side='left', padx=10, pady=5)
-            elif instance1:
-                result_window.title(f"Result Table: {instance1} ({len(df)} rows)")
-                label_frame = ttk.Frame(result_window)
-                label_frame.pack(fill='x')
-                tk.Label(label_frame, text=f"Instance: {instance1}", font=("Arial", 12, "bold")).pack(side='left', padx=10, pady=5)
+                result_window.title(f"Results: {instance1} vs {instance2} ({len(df)} rows)")
             else:
-                result_window.title(f"Result Table ({len(df)} rows)")
+                for widget in header_frame.winfo_children():
+                    if (
+                        isinstance(widget, ttk.Checkbutton)
+                        or (isinstance(widget, ttk.Label) and "Instance 2" in widget.cget("text"))
+                        or (isinstance(widget, ttk.Label) and diff_summary in widget.cget("text"))
+                    ):
+                        widget.pack_forget()
+                result_window.title(f"Results: {instance1} ({len(df)} rows)")
 
+            # --- Treeview Frame ---
+            tree_frame = ttk.Frame(result_window)
+            tree_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
-            frame = ttk.Frame(result_window)
-            frame.pack(fill='both', expand=True)
-            frame.pack_propagate(False)  # Prevent frame from resizing to fit contents
-            tree_scroll_y = ttk.Scrollbar(frame, orient="vertical")
-            tree_scroll_y.pack(side='right', fill='y')
-            tree_scroll_x = ttk.Scrollbar(frame, orient="horizontal")
-            tree_scroll_x.pack(side='bottom', fill='x')
+            columns = list(df.columns)
+            tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=30)
+            tree.pack(side="left", fill="both", expand=True)
 
-            tree = ttk.Treeview(frame, columns=list(df.columns), show='headings',
-                                yscrollcommand=tree_scroll_y.set, xscrollcommand=tree_scroll_x.set, height=20)
-            tree.pack(fill='both', expand=True)  # <-- This enables expansion in both directions
-            
-            # After creating your Treeview (tree), add this for each column:
-            for col in df.columns:
+            # Add scrollbars
+            vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+            vsb.pack(side="right", fill="y")
+            tree.configure(yscrollcommand=vsb.set)
+
+            hsb = ttk.Scrollbar(result_window, orient="horizontal", command=tree.xview)
+            hsb.pack(fill="x")
+            tree.configure(xscrollcommand=hsb.set)
+
+            # Setup columns
+            # Exclude "Hash Match" column from display
+            display_columns = [col for col in columns if col != "Hash Match"]
+            tree["columns"] = display_columns
+            for col in display_columns:
                 tree.heading(col, text=col, command=lambda _col=col: treeview_sort_column(tree, _col, False))
+                tree.column(col, width=180 if col.lower() == "query" else 120, anchor="w", stretch=True)
 
-            tree_scroll_y.config(command=tree.yview)
-            tree_scroll_x.config(command=tree.xview)
+            # Color tags
+            tree.tag_configure("diff", background="#f4d4d4")
+            tree.tag_configure("same", background="#d4f4dd")
+            tree.tag_configure("no_compare", background="#ffffff", foreground="#000000")
 
-            # Store full values for copy
-            cell_values = {}
+            on_view_all_toggle()
+            # Insert data
+            # Determine which DataFrame to use based on the "View All Queries" checkbox
+            # display_df = df if (not two_instances or view_all_var.get()) else df[df["Hash Match"] == "Mismatch"] if "Hash Match" in df.columns else df
 
-            for col in df.columns:
-                tree.heading(col, text=col)
-                width = 200 if col.lower() == "query" else 100
-                tree.column(col, width=width, stretch=False)
+            # for row_idx, row in display_df.iterrows():
+            #     tag = "same"
+            #     if two_instances:
+            #         if "Query Hash" in display_df.columns and "Query Hash Baseline" in display_df.columns:
+            #             tag = "diff" if row["Query Hash"] != row["Query Hash Baseline"] else "same"
+            #         elif "row_hash" in display_df.columns and "row_hash_baseline" in display_df.columns:
+            #             tag = "diff" if row["row_hash"] != row["row_hash_baseline"] else "same"
+            #         else:
+            #             tag = "diff" if len(set([str(row[col]) for col in columns])) > 1 else "same"
 
-            for row_idx, row in df.iterrows():
-                values = []
-                for col in df.columns:
-                    val = row[col]
-                    display_val = val
-                    if col.lower() == "query" and isinstance(val, str):
-                        display_val = val[:20] + "..." if len(val) > 20 else val
-                        display_val = display_val.replace('\n\t', ' ').replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ').replace('\t', ' ')
-                    values.append(display_val)
-                    cell_values[(row_idx, col)] = val  # Store full value
-                tree.insert('', 'end', iid=row_idx, values=values)
+            #     values = [
+            #         (
+            #             str(row[col])[:20] + "..." if col.lower() == "query" and len(str(row[col])) > 20 else str(row[col])
+            #         ).replace('\n\t', ' ').replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ').replace('\t', ' ')
+            #         for col in columns
+            #     ]
+            #     tree.insert("", "end", iid=row_idx, values=values, tags=(tag,))
+            # for row_idx, row in df.iterrows():
+            #     # Example: color row red if any value differs between instances, else green
+            #     tag = "same"
+            #     if two_instances:
+            #         # If you have specific columns to compare, adjust here
+            #         # For now, mark as "diff" if any value in the row is different between instances
+            #         # (Assumes columns are aligned for both instances)
+            #         if "Query Hash" in df.columns and "Query Hash Baseline" in df.columns:
+            #             tag = "diff" if row["Query Hash"] != row["Query Hash Baseline"] else "same"
+            #         elif "row_hash" in df.columns and "row_hash_baseline" in df.columns:
+            #             tag = "diff" if row["row_hash"] != row["row_hash_baseline"] else "same"
+            #         else:
+            #             # Fallback: mark as diff if any value is not equal to the first column
+            #             # values = [str(row[col]) for col in columns]
+            #             tag = "diff" if len(set(values)) > 1 else "same"
 
-            # Context menu for copying cell value
+            #     values = [
+            #         (
+            #             str(row[col])[:20] + "..." if col.lower() == "query" and len(str(row[col])) > 20 else str(row[col])
+            #         ).replace('\n\t', ' ').replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ').replace('\t', ' ')
+            #         for col in columns
+            #     ]
+            #     # values = [row[col] for col in columns]
+            #     tree.insert("", "end", iid=row_idx, values=values, tags=(tag,))
+
+            # --- Context Menu ---
             menu = tk.Menu(result_window, tearoff=0)
             menu.add_command(label="Copy", command=lambda: copy_cell())
             menu.add_command(label="Ignore Query", command=lambda: ignore_query())
@@ -721,6 +863,12 @@ class PowerBIRegressionTesterApp:
                 menu.add_command(label="Run Query on Both Instances", command=lambda: run_query())
             else:
                 menu.add_command(label="Run Query", command=lambda: run_query())
+
+            # Store full values for copy
+            cell_values = {}
+            for row_idx, row in df.iterrows():
+                for col in df.columns:
+                    cell_values[(row_idx, col)] = row[col]
 
             def treeview_sort_column(tree, col, reverse):
                 # Get all values in the column and sort them
@@ -734,7 +882,7 @@ class PowerBIRegressionTesterApp:
                     tree.move(k, '', index)
                 # Reverse sort next time
                 tree.heading(col, command=lambda: treeview_sort_column(tree, col, not reverse))
-
+                
             def copy_cell():
                 if hasattr(tree, 'clicked_cell'):
                     row_idx, col_idx = tree.clicked_cell
@@ -752,30 +900,15 @@ class PowerBIRegressionTesterApp:
                         row_idx = int(row_id)
                         col_idx = int(col_id.replace("#", "")) - 1
                         tree.clicked_cell = (row_idx, col_idx)
-                        col_name = df.columns[col_idx]
-                        # Enable/disable Ignore Query menu item
-                        # if col_name == "ID":
-                        #     menu.entryconfig("Ignore Query", state="normal")
-                        # else:
-                        #     menu.entryconfig("Ignore Query", state="disabled")
                         menu.tk_popup(event.x_root, event.y_root)
 
-            tree.bind("<Button-3>", on_right_click)  # Right-click
+            tree.bind("<Button-3>", on_right_click)
 
-            # Double-click to show/copy full text
             def on_double_click():
                 if hasattr(tree, 'clicked_cell'):
                     row_idx, col_idx = tree.clicked_cell
-                    # Always use the "query" column for full text display
-                    if "query" in df.columns:
-                        col_idx = df.columns.get_loc("query")
-                        col_name = "query"
-                    else:
-                        col_name = df.columns[col_idx]
-                    # full_text = df.iloc[tree.index(item[0]), col_idx]
-                    full_text = cell_values.get((row_idx, "Query"), "")
-                    # if col_name.lower() == "query" and isinstance(full_text, str):
-                    # Show full text in a popup with copy option
+                    col_name = df.columns[col_idx]
+                    full_text = cell_values.get((row_idx, col_name), "")
                     popup = tk.Toplevel(result_window)
                     popup.title(f"Full text: {col_name}")
                     text_box = tk.Text(popup, wrap='word', width=80, height=10)
@@ -792,22 +925,19 @@ class PowerBIRegressionTesterApp:
                 if hasattr(tree, 'clicked_cell'):
                     row_idx, col_idx = tree.clicked_cell
                     col_name = df.columns[col_idx]
-                    if col_name == "ID":
-                        query_id = cell_values.get((row_idx, col_name), None)
-                        if query_id:
-                            # Find the current project
-                            project_name = self.project_folder_var.get()
-                            project = self.get_project(project_name)
-                            if project is not None:
-                                ignore_list = project.setdefault("queriesToIgnore", [])
-                                if query_id not in ignore_list:
-                                    ignore_list.append(query_id)
-                                    self.save_all_configs()
-                                    messagebox.showinfo("Ignored", f"Query ID '{query_id}' added to ignore list for project '{project_name}'.")
-                                else:
-                                    messagebox.showinfo("Ignored", f"Query ID '{query_id}' is already in the ignore list.")            
-
-
+                    query_id = cell_values.get((row_idx, col_name), None)
+                    if query_id:
+                        project_name = self.project_folder_var.get()
+                        project = self.get_project(project_name)
+                        if project is not None:
+                            ignore_list = project.setdefault("queriesToIgnore", [])
+                            if query_id not in ignore_list:
+                                ignore_list.append(query_id)
+                                self.save_all_configs()
+                                messagebox.showinfo("Ignored", f"Query ID '{query_id}' added to ignore list for project '{project_name}'.")
+                            else:
+                                messagebox.showinfo("Ignored", f"Query ID '{query_id}' is already in the ignore list.")
+        
             def run_query():
                 if hasattr(tree, 'clicked_cell'):
                             
@@ -1090,10 +1220,12 @@ class PowerBIRegressionTesterApp:
                                 tree2.heading(col, text=col)
                                 tree2.column(col, width=120, stretch=False)
 
-                        
-
-
                         notebook.add(frame, text=tab_name)
+                        
+            # --- Status Bar ---
+            status_var = tk.StringVar(value="Ready")
+            status_bar = ttk.Label(result_window, textvariable=status_var, relief="sunken", anchor="w")
+            status_bar.pack(fill="x", side="bottom")
                                                         
     
     def view_baseline(self):

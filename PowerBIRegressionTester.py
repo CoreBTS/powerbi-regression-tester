@@ -754,9 +754,11 @@ class PowerBIRegressionTester:
                 (comparison_df['Query Hash'].isna() ^ comparison_df['Query Hash_baseline'].isna())
             )
         )
-        value_diffs = comparison_df[diff_mask]
+        # Add a column 'IsDifferent' that is True where diff_mask is True, else False
+        comparison_df['Hash Match'] = ~diff_mask
+        value_diffs = comparison_df
 
-        desired_columns = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount', 'RowCount_baseline', '_merge', 'Query Hash', 'Query Hash_baseline']
+        desired_columns = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount', 'RowCount_baseline', '_merge', 'Query Hash', 'Query Hash_baseline', 'Hash Match']
         value_diffs = value_diffs[desired_columns]
 
         # Rename columns if needed before selecting
