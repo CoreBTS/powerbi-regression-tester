@@ -267,15 +267,15 @@ class PowerBIRegressionTesterApp:
         else:
             self.instance_dropdown.set("")
 
-    def on_config_select(self, event=None):
-        name = self.config_dropdown.get()
-        if name in self.configs:
-            self.load_config_to_fields(name)
+    # def on_config_select(self, event=None):
+    #     name = self.config_dropdown.get()
+    #     if name in self.configs:
+    #         self.load_config_to_fields(name)
 
     def on_project_folder_select(self, event=None):
         project_folder = self.project_folder_var.get()
-        if project_folder in self.configs:
-            self.load_config_to_fields(project_folder)
+        # if project_folder in self.configs:
+        self.load_config_to_fields(project_folder)
     
     def save_current_config(self):
         project_name = self.project_folder_var.get().strip()
