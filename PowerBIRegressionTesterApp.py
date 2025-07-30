@@ -363,6 +363,7 @@ class PowerBIRegressionTesterApp:
         dialog.title(f"{instance.get('instance_name', 'Baseline')} Details")
         dialog.grab_set()
         dialog.resizable(False, False)
+        dialog.geometry("380x340")
 
         # Variables
         instance_name_var = tk.StringVar(value=instance.get("instance_name", "Baseline"))
@@ -374,38 +375,49 @@ class PowerBIRegressionTesterApp:
         xmla_endpoint_var = tk.BooleanVar(value=instance.get("xmla_endpoint", False))
         local_instance_var = tk.BooleanVar(value=instance.get("local_instance", False))
 
-        # Layout
-        tk.Label(dialog, text="Instance Name:").grid(row=0, column=0, sticky="e")
-        name_entry = tk.Entry(dialog, textvariable=instance_name_var, width=40)
+        # --- Main Frame ---
+        main_frame = ttk.Frame(dialog, padding=15)
+        main_frame.pack(fill="both", expand=True)
+
+        # --- Details Frame ---
+        details = ttk.LabelFrame(main_frame, text="Instance Details", padding=(10, 10))
+        details.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
+        details.columnconfigure(1, weight=1)
+
+        ttk.Label(details, text="Instance Name:").grid(row=0, column=0, sticky="e", padx=5, pady=4)
+        name_entry = ttk.Entry(details, textvariable=instance_name_var, width=32)
         name_entry.config(state="disabled" if instance.get("instance_name", "Baseline") == 'Baseline' else "normal")
-        name_entry.grid(row=0, column=1, padx=5, pady=2)
+        name_entry.grid(row=0, column=1, sticky="ew", padx=5, pady=4)
 
-        tk.Label(dialog, text="Server Name:").grid(row=1, column=0, sticky="e")
-        server_entry = tk.Entry(dialog, textvariable=server_name_var, width=40)
-        server_entry.grid(row=1, column=1, padx=5, pady=2)
+        ttk.Label(details, text="Server Name:").grid(row=1, column=0, sticky="e", padx=5, pady=4)
+        server_entry = ttk.Entry(details, textvariable=server_name_var, width=32)
+        server_entry.grid(row=1, column=1, sticky="ew", padx=5, pady=4)
 
-        tk.Label(dialog, text="Database Name:").grid(row=2, column=0, sticky="e")
-        db_entry = tk.Entry(dialog, textvariable=database_name_var, width=40)
-        db_entry.grid(row=2, column=1, padx=5, pady=2)
+        ttk.Label(details, text="Database Name:").grid(row=2, column=0, sticky="e", padx=5, pady=4)
+        db_entry = ttk.Entry(details, textvariable=database_name_var, width=32)
+        db_entry.grid(row=2, column=1, sticky="ew", padx=5, pady=4)
 
-        tk.Label(dialog, text="User ID:").grid(row=3, column=0, sticky="e")
-        user_entry = tk.Entry(dialog, textvariable=user_id_var, width=40)
-        user_entry.grid(row=3, column=1, padx=5, pady=2)
+        ttk.Label(details, text="User ID:").grid(row=3, column=0, sticky="e", padx=5, pady=4)
+        user_entry = ttk.Entry(details, textvariable=user_id_var, width=32)
+        user_entry.grid(row=3, column=1, sticky="ew", padx=5, pady=4)
 
-        tk.Label(dialog, text="Password:").grid(row=4, column=0, sticky="e")
-        pass_entry = tk.Entry(dialog, textvariable=password_var, width=40, show="*")
-        pass_entry.grid(row=4, column=1, padx=5, pady=2)
+        ttk.Label(details, text="Password:").grid(row=4, column=0, sticky="e", padx=5, pady=4)
+        pass_entry = ttk.Entry(details, textvariable=password_var, width=32, show="*")
+        pass_entry.grid(row=4, column=1, sticky="ew", padx=5, pady=4)
 
-        interactive_chk = tk.Checkbutton(dialog, text="Interactive", variable=interactive_var)
-        interactive_chk.grid(row=5, column=0, columnspan=2, pady=5)
+        # --- Options Frame ---
+        options = ttk.LabelFrame(main_frame, text="Connection Options", padding=(10, 10))
+        options.grid(row=1, column=0, sticky="ew", padx=5, pady=(0, 5))
+        options.columnconfigure(0, weight=1)
 
-        xmla_chk = tk.Checkbutton(dialog, text="XMLA Endpoint", variable=xmla_endpoint_var)
-        xmla_chk.grid(row=6, column=0, columnspan=2, pady=5)
+        interactive_chk = ttk.Checkbutton(options, text="Interactive", variable=interactive_var)
+        interactive_chk.grid(row=0, column=0, sticky="w", padx=2, pady=2)
+        xmla_chk = ttk.Checkbutton(options, text="XMLA Endpoint", variable=xmla_endpoint_var)
+        xmla_chk.grid(row=0, column=1, sticky="w", padx=2, pady=2)
+        local_chk = ttk.Checkbutton(options, text="Local Instance", variable=local_instance_var)
+        local_chk.grid(row=0, column=2, sticky="w", padx=2, pady=2)
 
-        local_chk = tk.Checkbutton(dialog, text="Local Instance", variable=local_instance_var)
-        local_chk.grid(row=7, column=0, columnspan=2, pady=5)
-
-        # Disable/enable fields based on checkbox
+        # --- Field Enable/Disable Logic ---
         def toggle_fields(*args):
             user_entry.config(state="disabled" if interactive_var.get() else "normal")
             pass_entry.config(state="disabled" if interactive_var.get() else "normal")
@@ -424,8 +436,11 @@ class PowerBIRegressionTesterApp:
         local_instance_var.trace_add("write", toggle_fields)
         toggle_fields()  # Set initial state
 
-        # Buttons
+        # --- Buttons Frame ---
+        btn_frame = ttk.Frame(main_frame)
+        btn_frame.grid(row=2, column=0, sticky="e", pady=(10, 0))
         result = {}
+
         def on_ok():
             result["instance_name"] = instance_name_var.get().strip()
             result["interactive"] = interactive_var.get()
@@ -433,7 +448,7 @@ class PowerBIRegressionTesterApp:
                 messagebox.showerror("Error", "Instance Name is required.", parent=dialog)
                 return
             if not (interactive_var.get() or xmla_endpoint_var.get() or local_instance_var.get()):
-                messagebox.showerror("Error", "Either 'Interactive' or 'XMLA Endpoint' must be checked.", parent=dialog)
+                messagebox.showerror("Error", "Either 'Interactive', 'XMLA Endpoint', or 'Local Instance' must be checked.", parent=dialog)
                 return
             result["server_name"] = server_name_var.get().strip()
             result["database_name"] = database_name_var.get().strip()
@@ -451,57 +466,88 @@ class PowerBIRegressionTesterApp:
             result.clear()
             dialog.destroy()
 
-        tk.Button(dialog, text="OK", command=on_ok).grid(row=7, column=0, pady=10)
-        tk.Button(dialog, text="Cancel", command=on_cancel).grid(row=7, column=1, pady=10)
+        ttk.Button(btn_frame, text="OK", command=on_ok).grid(row=0, column=0, padx=10)
+        ttk.Button(btn_frame, text="Cancel", command=on_cancel).grid(row=0, column=1, padx=10)
 
         dialog.wait_window()
         return result if result else None
-        
-    def edit_selected_instance(self):
-        project = self.get_project(self.project_folder_var.get())
-        instance_name = self.instance_dropdown.get().strip()
-        if not project or not instance_name:
-            messagebox.showerror("Error", "No instance selected to edit.")
-            return
-        instance = next((inst for inst in project.get("instances", []) if inst["instance_name"] == instance_name), None)
-        if not instance:
-            messagebox.showerror("Error", f"Instance '{instance_name}' not found.")
-            return
 
-        # Prompt with current values
-        edited = self.prompt_instance_details(instance)
-        if not edited:
-            return
-        # Overwrite the instance
-        idx = next((i for i, inst in enumerate(project["instances"]) if inst["instance_name"] == instance_name), None)
-        if idx is not None:
-            project["instances"][idx] = edited
-            self.save_all_configs()
-            self.update_instance_dropdown()
-            self.instance_dropdown.set(edited["instance_name"])
-            messagebox.showinfo("Saved", f"Instance '{edited['instance_name']}' updated.")
+    def edit_selected_instance(self):
+        instance_name = self.instance_dropdown.get().strip()
+        self.edit_instance(instance_name)
+
+        # project = self.get_project(self.project_folder_var.get())
+        # instance_name = self.instance_dropdown.get().strip()
+
+
+        # if not project or not instance_name:
+        #     messagebox.showerror("Error", "No instance selected to edit.")
+        #     return
+        # instance = next((inst for inst in project.get("instances", []) if inst["instance_name"] == instance_name), None)
+        # if not instance:
+        #     messagebox.showerror("Error", f"Instance '{instance_name}' not found.")
+        #     return
+
+        # # Prompt with current values
+        # edited = self.prompt_instance_details(instance)
+        # if not edited:
+        #     return
+        # # Overwrite the instance
+        # idx = next((i for i, inst in enumerate(project["instances"]) if inst["instance_name"] == instance_name), None)
+        # if idx is not None:
+        #     project["instances"][idx] = edited
+        #     self.save_all_configs()
+        #     self.update_instance_dropdown()
+        #     self.instance_dropdown.set(edited["instance_name"])
+        #     messagebox.showinfo("Saved", f"Instance '{edited['instance_name']}' updated.")
 
     def edit_baseline(self):
+        self.edit_instance("Baseline")
+        # # For baseline, you may want to use a convention (e.g., instance_name == "Baseline")
+        # project = self.get_project(self.project_folder_var.get())
+        # if not project:
+        #     messagebox.showerror("Error", "No project selected.")
+        #     return
+        # instance = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == "baseline"), None)
+        # if not instance:
+        #     messagebox.showerror("Error", "No baseline instance found.")
+        #     return
+        # edited = self.prompt_instance_details(instance)
+        # if not edited:
+        #     return
+        # idx = next((i for i, inst in enumerate(project["instances"]) if inst["instance_name"].lower() == "baseline"), None)
+        # if idx is not None:
+        #     project["instances"][idx] = edited
+        #     self.save_all_configs()
+        #     self.update_instance_dropdown()
+        #     if edited["instance_name"] != "Baseline":
+        #         self.instance_dropdown.set(edited["instance_name"])
+        #     messagebox.showinfo("Saved", "Baseline instance updated.")
+
+    def edit_instance(self, instance_name):
         # For baseline, you may want to use a convention (e.g., instance_name == "Baseline")
         project = self.get_project(self.project_folder_var.get())
         if not project:
             messagebox.showerror("Error", "No project selected.")
             return
-        instance = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == "baseline"), None)
+        # instance = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == "baseline"), None)
+        instance = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == instance_name.lower()), None)
         if not instance:
-            messagebox.showerror("Error", "No baseline instance found.")
+            messagebox.showerror("Error", f"{instance_name} found.")
             return
         edited = self.prompt_instance_details(instance)
         if not edited:
             return
-        idx = next((i for i, inst in enumerate(project["instances"]) if inst["instance_name"].lower() == "baseline"), None)
+        # idx = next((i for i, inst in enumerate(project["instances"]) if inst["instance_name"].lower() == "baseline"), None)
+        idx = next((i for i, inst in enumerate(project["instances"]) if inst["instance_name"].lower() == instance_name.lower()), None)
         if idx is not None:
             project["instances"][idx] = edited
             self.save_all_configs()
             self.update_instance_dropdown()
-            if edited["instance_name"] != "Baseline":
+            if edited["instance_name"].lower() != "baseline":
                 self.instance_dropdown.set(edited["instance_name"])
-            messagebox.showinfo("Saved", "Baseline instance updated.")
+            #messagebox.showinfo("Saved", "Baseline instance updated.")
+            messagebox.showinfo("Saved", f"'{edited['instance_name']}' updated.")
 
     # def prompt_instance_details_prefilled(self, instance):
     #     dialog = tk.Toplevel(self.root)
