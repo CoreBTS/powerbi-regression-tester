@@ -33,6 +33,53 @@ class PowerBIRegressionTesterApp:
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
+        # PowerBIRegressionTester.set_tenant_id('e39cce29-5716-43ba-b27d-1bdd8fd67901')
+        self.ensure_tenant_id()
+
+    def ensure_tenant_id(self):
+        # Load config (assuming self.configs is your loaded JSON dict)
+        tenant_id = self.configs.get("tenant_id", None)
+        if tenant_id is None:
+            tenant_id = self.prompt_for_tenant_id()
+            if tenant_id is not None:  # User didn't cancel
+                self.configs["tenant_id"] = tenant_id
+                self.save_all_configs()  # Save back to file
+        # Set it on your class/static property if needed
+        PowerBIRegressionTester.set_tenant_id(tenant_id or "")
+
+    def prompt_for_tenant_id(self):
+        import tkinter as tk
+        from tkinter import simpledialog, messagebox
+
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Enter Tenant ID")
+        dialog.grab_set()
+        dialog.resizable(False, False)
+        dialog.geometry("400x150")
+
+        tk.Label(dialog, text="Please enter your Azure Tenant ID (can be blank):").pack(pady=10)
+        tenant_var = tk.StringVar()
+        entry = tk.Entry(dialog, textvariable=tenant_var, width=40)
+        entry.pack(pady=5)
+        entry.focus_set()
+
+        result = {"value": None}
+
+        def on_ok():
+            result["value"] = tenant_var.get().strip()
+            dialog.destroy()
+
+        def on_cancel():
+            dialog.destroy()
+
+        btn_frame = tk.Frame(dialog)
+        btn_frame.pack(pady=10)
+        tk.Button(btn_frame, text="OK", width=10, command=on_ok).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Cancel", width=10, command=on_cancel).pack(side="left", padx=5)
+
+        dialog.wait_window()
+        return result["value"]
+
     def encrypt_for_user(self, plaintext):
         if sys.platform != "win32":
             return plaintext  # fallback: no encryption
@@ -787,7 +834,7 @@ class PowerBIRegressionTesterApp:
             tree_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
             columns = list(df.columns)
-            tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=30)
+            tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=30, selectmode="browse")
             tree.pack(side="left", fill="both", expand=True)
 
             # Add scrollbars
@@ -1003,37 +1050,66 @@ class PowerBIRegressionTesterApp:
                                     return
 
                                 if row1_values and row2_values:
-                                    row_id2 = selected2[0]
-                                    # Get row data from both trees
-                                    # values1 = tree1.item(row_id1, "values")
-                                    # values2 = tree2.item(row_id2, "values")
-                                    columns = tree1["columns"]
+                                    columns = [col for col in tree1["columns"] if col not in ("Row Hash", "Result Set Hash")]
 
-                                    # Create new window for comparison
-                                    compare_popup = tk.Toplevel()
+                                    # --- Compare Popup Window ---
+                                    compare_popup = tk.Toplevel(self.root)
                                     compare_popup.title("Row Comparison")
-                                    compare_popup.geometry("1000x800")
-                                    frame = ttk.Frame(compare_popup)
-                                    frame.pack(fill='both', expand=True)
+                                    compare_popup.geometry("1000x600")
 
-                                    compare_tree = ttk.Treeview(frame, columns=("Column", "Query 1 Value", "Query 2 Value"), show='headings')
+                                    # --- Header Frame ---
+                                    header_frame = ttk.Frame(compare_popup)
+                                    header_frame.pack(fill='x', padx=10, pady=10)
+                                    instance1_label = ttk.Label(header_frame, text=f"{instance1} Row", font=("Arial", 12, "bold"))
+                                    instance1_label.pack(side='left', padx=10)
+                                    instance2_label = ttk.Label(header_frame, text=f"{instance2} Row", font=("Arial", 12, "bold"))
+                                    instance2_label.pack(side='left', padx=10)
+                                    # ttk.Label(header_frame, text="Column Comparison", font=("Arial", 12)).pack(side='right', padx=10)
+
+                                    # --- Main Frame for Treeview ---
+                                    main_frame = ttk.Frame(compare_popup)
+                                    main_frame.pack(fill='both', expand=True, padx=10, pady=5)
+
+                                    compare_tree = ttk.Treeview(main_frame, columns=("Column", "Query 1 Value", "Query 2 Value"), show='headings', selectmode="browse")
+                                    compare_tree.grid(row=0, column=0, sticky="nsew")
+
+                                    vsb = ttk.Scrollbar(main_frame, orient="vertical", command=compare_tree.yview)
+                                    vsb.grid(row=0, column=1, sticky="ns")
+                                    compare_tree.configure(yscrollcommand=vsb.set)
+
+                                    hsb = ttk.Scrollbar(main_frame, orient="horizontal", command=compare_tree.xview)
+                                    hsb.grid(row=1, column=0, sticky="ew")
+                                    compare_tree.configure(xscrollcommand=hsb.set)
+
+                                    main_frame.rowconfigure(0, weight=1)
+                                    main_frame.columnconfigure(0, weight=1)
+
                                     compare_tree.heading("Column", text="Column")
-                                    compare_tree.heading("Query 1 Value", text="Query 1 Value")
-                                    compare_tree.heading("Query 2 Value", text="Query 2 Value")
-                                    compare_tree.pack(fill='both', expand=True)
+                                    compare_tree.heading("Query 1 Value", text=f"{instance1} Value")
+                                    compare_tree.heading("Query 2 Value", text=f"{instance2} Value")
+                                    compare_tree.column("Column", width=200, anchor="w")
+                                    compare_tree.column("Query 1 Value", width=350, anchor="w")
+                                    compare_tree.column("Query 2 Value", width=350, anchor="w")
 
                                     compare_tree.tag_configure('green_row', background='#d4f4dd')
                                     compare_tree.tag_configure('red_row', background='#f4d4d4')
 
+                                    matched_values = 0
                                     for idx, col in enumerate(columns):
                                         val1 = row1_values[idx] if idx < len(row1_values) else ""
                                         val2 = row2_values[idx] if idx < len(row2_values) else ""
-                                        tag = 'green_row' if val1 == val2 else 'red_row'
+                                        # tag = 'green_row' if val1 == val2 else 'red_row'
+                                        if val1 == val2:
+                                            matched_values += 1
+                                            tag = 'green_row'
+                                        else:
+                                            tag = 'red_row'
                                         compare_tree.insert('', 'end', values=(col, val1, val2), tags=(tag,))
 
-                    # if not is_compare:
-                    #     messagebox.showerror("Error", "This feature is only available when comparing two instances.")
-                    #     return
+                                    unmatched_values = len(columns) - matched_values
+                                    instance1_label.config(text=f"Equal columns: {matched_values}")
+                                    instance2_label.config(text=f"Different columns: {unmatched_values}")
+
 
                     project = self.get_project(self.project_folder_var.get())
                     inst1_obj = next((inst for inst in project["instances"] if inst["instance_name"] == instance1), None)
@@ -1132,7 +1208,7 @@ class PowerBIRegressionTesterApp:
                         tree1_scroll_x = ttk.Scrollbar(left_frame, orient="horizontal")
                         tree1_scroll_x.pack(side='bottom', fill='x')
                         tree1 = ttk.Treeview(left_frame, columns=list(instance1_df.columns), show='headings',
-                                            yscrollcommand=tree1_scroll_y.set, xscrollcommand=tree1_scroll_x.set, height=20)
+                                            yscrollcommand=tree1_scroll_y.set, xscrollcommand=tree1_scroll_x.set, height=20, selectmode="browse")
                         tree1.bind("<Button-3>", on_right_click_query)  # Right-click
                         tree1_list.append(tree1)
                         
@@ -1184,7 +1260,7 @@ class PowerBIRegressionTesterApp:
                             tree2_scroll_x = ttk.Scrollbar(right_frame, orient="horizontal")
                             tree2_scroll_x.pack(side='bottom', fill='x')
                             tree2 = ttk.Treeview(right_frame, columns=list(instance2_df.columns), show='headings',
-                                                yscrollcommand=tree2_scroll_y.set, xscrollcommand=tree2_scroll_x.set, height=20)
+                                                yscrollcommand=tree2_scroll_y.set, xscrollcommand=tree2_scroll_x.set, height=20, selectmode="browse")
                             tree2.bind("<Button-3>", on_right_click_query)  # Right-click
                             tree2_list.append(tree2)
 

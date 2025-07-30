@@ -16,6 +16,7 @@ class PowerBIRegressionTester:
     and comparison, as well as mapping visuals to their page names.
     """
 
+    _tenant_id = None  # Class variable for TenantID
     PROJECT_FOLDER_BASE = "Projects"
     QUERIES_BASE_FOLDER = "Query Files"
     BASELINE_FOLDER_NAME = "baseline"
@@ -84,6 +85,7 @@ class PowerBIRegressionTester:
         self.dax_studio_query_folder = os.path.join(self.project_folder, self.QUERIES_BASE_FOLDER, self.DAX_STUDIO_QUERY_FOLDER_NAME)
         self.power_bi_perf_analyzer_query_folder = os.path.join(self.project_folder, self.QUERIES_BASE_FOLDER, self.POWER_BI_PERF_ANALYZER_QUERY_FOLDER_NAME)
 
+        self._connection_string_value = None
 
         adomd_path = r'C:\Program Files\Microsoft.NET\ADOMD.NET\160'
 
@@ -95,25 +97,26 @@ class PowerBIRegressionTester:
         if adomd_path not in path:
             path.append(adomd_path)
 
+    def build_connection_string(self):
         # If datasource is empty which signifies an interactive connection, build the connection string
         if self.local_instance:
-            self.connection_string = (
+            self._connection_string_value = (
                 f"Provider=MSOLAP;Data Source={self.datasource};"
                 f"Initial Catalog={self.database};"
             )
         elif self.interactive:
-            self.connection_string = self.build_interaction_connection_string()
+            self._connection_string_value = self._build_interaction_connection_string()
         else:
             if not self.xmla_endpoint:
                 raise ValueError("Either 'Local Instance', 'Interactive' or 'XMLA Endpoint' must be True to build a valid connection string.")
 
-            self.connection_string = (
+            self._connection_string_value = (
                 f"Provider=MSOLAP;Data Source={self.datasource};"
                 f"Initial Catalog={self.database};"
                 f"User ID={self.user_id};Password={self.password}"
             )
 
-    def build_interaction_connection_string(self):
+    def _build_interaction_connection_string(self):
         # Your Azure AD App Registration details
         # CLIENT_ID = '54640219-af44-42bb-adcd-d3722aa55e04'  # Application (client) ID
 
@@ -121,8 +124,11 @@ class PowerBIRegressionTester:
         # https://learn.microsoft.com/en-us/power-bi/developer/visuals/entra-id-authentication?utm_source=chatgpt.com
         CLIENT_ID = '7f67af8a-fedc-4b08-8b4e-37c4d127b6cf'
 
-        TENANT_ID = 'e39cce29-5716-43ba-b27d-1bdd8fd67901'  # Or your tenant ID
-        AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
+        # TENANT_ID = 'e39cce29-5716-43ba-b27d-1bdd8fd67901'  # Or your tenant ID
+
+
+
+        AUTHORITY = f"https://login.microsoftonline.com/{PowerBIRegressionTester._tenant_id}"
         SCOPES = ["https://analysis.windows.net/powerbi/api/.default"]
         API_BASE = f"https://api.powerbi.com/v1.0/myorg"
 
@@ -189,6 +195,32 @@ class PowerBIRegressionTester:
         )
 
         return connection_string
+    
+    @property
+    def _connection_string(self):
+        if self._connection_string_value is None:
+            self.build_connection_string()
+            
+        return self._connection_string_value
+
+
+    @classmethod
+    def get_tenant_id(cls):
+        return cls._tenant_id
+
+    @classmethod
+    def set_tenant_id(cls, value):
+        import re
+        guid_regex = re.compile(
+            r'^[{(]?[0-9a-fA-F]{8}-'
+            r'[0-9a-fA-F]{4}-'
+            r'[0-9a-fA-F]{4}-'
+            r'[0-9a-fA-F]{4}-'
+            r'[0-9a-fA-F]{12}[)}]?$'
+        )
+        if not isinstance(value, str) or not guid_regex.match(value):
+            raise ValueError(f"Tenant ID '{value}' is not a valid GUID.")
+        cls._tenant_id = value
 
     @classmethod
     def for_compare_only(cls, project_folder):
@@ -212,7 +244,7 @@ class PowerBIRegressionTester:
         obj.baseline_csv_file = os.path.join(obj.baseline_folder, cls.BASELINE_CSV_FILE)
         obj.baseline_parquet_file = os.path.join(obj.baseline_folder, cls.BASELINE_PARQUET_FILE)
         obj.instance_folder_base = os.path.join(obj.project_folder, cls.INSTANCE_FOLDER_NAME)
-        obj.connection_string = None  # Not needed for compare-only
+        obj._connection_string_value = None  # Not needed for compare-only
 
         # obj.query_type = query_type
 
@@ -251,7 +283,7 @@ class PowerBIRegressionTester:
         instance_parquet_file = os.path.join(instance_folder, f"{instance_name}.parquet")
         return os.path.isfile(instance_parquet_file)
         
-    def find_visual_id(self, id_map, start_id):
+    def _find_visual_id(self, id_map, start_id):
         """
         Traverse the event id_map to find the visualId for a given event id.
 
@@ -274,7 +306,7 @@ class PowerBIRegressionTester:
             current_id = node.get('parentId')
         return None
 
-    def flatten_event(self, event):
+    def _flatten_event(self, event):
         """
         Flatten the 'metrics' dictionary into the top-level event dictionary.
 
@@ -289,7 +321,7 @@ class PowerBIRegressionTester:
         flat.update(metrics)
         return flat
 
-    def row_hash(self, row):
+    def _row_hash(self, row):
         """
         Generate a SHA-256 hash for a DataFrame row by concatenating its values.
 
@@ -302,7 +334,7 @@ class PowerBIRegressionTester:
         row_str = '|'.join(str(val) for val in row.values)
         return hashlib.sha256(row_str.encode('utf-8')).hexdigest()
 
-    def find_visual_json_by_id(self, report_folder, visual_id):
+    def _find_visual_json_by_id(self, report_folder, visual_id):
         """
         Recursively search for a visual.json file whose root 'name' matches the given visual_id.
 
@@ -345,7 +377,7 @@ class PowerBIRegressionTester:
     #             return page_data.get("displayName")
     #     return None
 
-    def build_visualid_to_pagename_map(self, report_folder):
+    def _build_visualid_to_pagename_map(self, report_folder):
         visualid_to_pagename = {}
         for root, dirs, files in os.walk(report_folder):
             if "visual.json" in files:
@@ -442,7 +474,7 @@ class PowerBIRegressionTester:
     #         return filtered_df
     #     return pd.DataFrame()
 
-    def load_events(self, query_type):
+    def _load_events(self, query_type):
         """
         Load and flatten all events from JSON files in the PBI PA Files folder.
 
@@ -482,18 +514,18 @@ class PowerBIRegressionTester:
 
         if query_type == self.QueryType.PERFORMANCE_ANALYZER:
             if self.pbi_report_folder:
-                visualid_to_pagename = self.build_visualid_to_pagename_map(self.pbi_report_folder)
+                visualid_to_pagename = self._build_visualid_to_pagename_map(self.pbi_report_folder)
 
             for json_path in glob.glob(os.path.join(self.power_bi_perf_analyzer_query_folder, r"*.json")):
                 with open(json_path, "r", encoding="utf-8-sig") as f:
                     data = json.load(f)
 
                 events = data.get("events", [])
-                flat_events = [self.flatten_event(e) for e in events]
+                flat_events = [self._flatten_event(e) for e in events]
                 df = pd.DataFrame(flat_events)
                 if not df.empty:
                     id_map = {event['id']: event for event in events if 'id' in event}
-                    df['VisualID'] = df['id'].apply(lambda x: self.find_visual_id(id_map, x))
+                    df['VisualID'] = df['id'].apply(lambda x: self._find_visual_id(id_map, x))
 
                     if self.pbi_report_folder:
                         df['PageName'] = df['VisualID'].map(visualid_to_pagename)
@@ -666,9 +698,10 @@ class PowerBIRegressionTester:
                     filtered_df.loc[idx, 'Query Hash'] = None
             except Exception as e:
                 print(f"Error executing query {query_id}: {e}\n")
+                raise
         return filtered_df
 
-    def compare_with_baseline(self, instance, ignore_list):
+    def _compare_with_baseline(self, instance, ignore_list):
         """
         Compare the current run's DataFrame with the baseline, returning only differing rows.
 
@@ -697,7 +730,7 @@ class PowerBIRegressionTester:
             sys.exit(1)
         baseline_df = pd.read_parquet(self.baseline_parquet_file)
 
-        value_diffs = self.compare_internal(baseline_df, instance_df, ignore_list)
+        value_diffs = self._compare_internal(baseline_df, instance_df, ignore_list)
 
         # comparison_df = filtered_df.merge(
         #     baseline_df, on='ID', suffixes=('', '_baseline'), how='outer', indicator=True
@@ -732,11 +765,11 @@ class PowerBIRegressionTester:
         instance_two_parquet_file = os.path.join(instance_two_folder, f"{instance_two}.parquet")
         instance_two_df = pd.read_parquet(instance_two_parquet_file)
 
-        value_diffs = self.compare_internal(instance_one_df, instance_two_df, ignore_list)
+        value_diffs = self._compare_internal(instance_one_df, instance_two_df, ignore_list)
         
         return value_diffs
     
-    def compare_internal(self, instance_one_df, instance_two_df, ignore_list):
+    def _compare_internal(self, instance_one_df, instance_two_df, ignore_list):
         # Remove rows from both DataFrames where ID is in ignore_list
         if ignore_list:
             instance_one_df = instance_one_df[~instance_one_df['ID'].isin(ignore_list)]
@@ -763,6 +796,7 @@ class PowerBIRegressionTester:
 
         # Rename columns if needed before selecting
         value_diffs = value_diffs.rename(columns={
+        'ID': 'Query ID',
         'PageName': 'Page Name',
         'VisualID': 'Visual ID',
         'ResultSets': 'Result Sets',
@@ -775,7 +809,7 @@ class PowerBIRegressionTester:
 
         return value_diffs
 
-    def prepare_df(self):
+    def _prepare_df(self):
         """
         Shared logic to load, filter, and process events, execute queries, and compute hashes.
 
@@ -809,18 +843,18 @@ class PowerBIRegressionTester:
         dax_studio_df = pd.DataFrame()
 
         if has_perf_analyzer_files:
-            power_bi_perf_analyzer = self.load_events(self.QueryType.PERFORMANCE_ANALYZER)
+            power_bi_perf_analyzer = self._load_events(self.QueryType.PERFORMANCE_ANALYZER)
             # Filter out records where 'Query' is missing (NaN or empty string)
             if not power_bi_perf_analyzer.empty and 'Query' in power_bi_perf_analyzer.columns:
                 power_bi_perf_analyzer = power_bi_perf_analyzer[power_bi_perf_analyzer['Query'].notna() & (power_bi_perf_analyzer['Query'] != "")]
 
         if has_dax_studio_files:
-            dax_studio_df = self.load_events(self.QueryType.DAX_STUDIO)
+            dax_studio_df = self._load_events(self.QueryType.DAX_STUDIO)
 
         combined_df = pd.concat([dax_studio_df, power_bi_perf_analyzer], ignore_index=True)
 
         if not combined_df.empty and 'Query' in combined_df.columns:
-            combined_df['Query'] = combined_df['Query'].apply(self.normalize_line_endings)
+            combined_df['Query'] = combined_df['Query'].apply(self._normalize_line_endings)
         # final_df['QueryHash'] = final_df['Query'].apply(lambda x: hashlib.sha256(str(x).encode('utf-8')).hexdigest())
 
         combined_df = self.execute_queries2(combined_df)
@@ -875,7 +909,7 @@ class PowerBIRegressionTester:
         # else:
         #     raise ValueError("Unsupported query type. Use DAX_STUDIO or PERFORMANCE_ANALYZER.")
         
-        filtered_df = self.prepare_df()
+        filtered_df = self._prepare_df()
         os.makedirs(self.baseline_folder, exist_ok=True)
         filtered_df.to_csv(self.baseline_csv_file, index=False)
         filtered_df.to_parquet(self.baseline_parquet_file, index=False)
@@ -891,7 +925,7 @@ class PowerBIRegressionTester:
         Returns:
             pd.DataFrame: DataFrame of value differences.
         """
-        instance_df = self.prepare_df()
+        instance_df = self._prepare_df()
         instance_folder = os.path.join(self.instance_folder_base, instance_name)
         os.makedirs(instance_folder, exist_ok=True)
         instance_csv_file = os.path.join(instance_folder, f"{instance_name}.csv")
@@ -905,7 +939,7 @@ class PowerBIRegressionTester:
 
         instance_df.to_csv(instance_csv_file, index=False)
         instance_df.to_parquet(instance_parquet_file, index=False)
-        value_diffs = self.compare_with_baseline(instance_df, ignore_list)
+        value_diffs = self._compare_with_baseline(instance_df, ignore_list)
         return value_diffs
     
     def compare(self, instance_name, ignore_list):
@@ -932,7 +966,7 @@ class PowerBIRegressionTester:
 
         # value_diffs = self.compare_with_baseline(instance_df)
 
-        value_diffs = self.compare_with_baseline(instance_name, ignore_list)
+        value_diffs = self._compare_with_baseline(instance_name, ignore_list)
         return value_diffs
     
         # # Merge and compare
@@ -968,12 +1002,12 @@ class PowerBIRegressionTester:
             return pd.read_parquet(instance_parquet_file)
         return pd.DataFrame()
 
-    def normalize_line_endings(self, text) -> str:
+    def _normalize_line_endings(self, text) -> str:
         if not isinstance(text, str):
             return text
         return text.replace('\r\n', '\n').replace('\r', '\n')
 
-    def normalize_to_crlf(self, s):
+    def _normalize_to_crlf(self, s):
         if pd.isna(s):
             return s
         return s.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
@@ -1016,7 +1050,7 @@ class PowerBIRegressionTester:
             pd.DataFrame: The result of the executed query.
         """
         from pyadomd import Pyadomd
-        with Pyadomd(self.connection_string) as conn:
+        with Pyadomd(self._connection_string) as conn:
             with conn.cursor().execute(query) as cur:
                 # columns = [col[0] for col in cur.description]
                 # rows = cur.fetchall()
@@ -1078,7 +1112,7 @@ class PowerBIRegressionTester:
                             #     row_count += f", {len(result_df)}"
                             # else:
                             #     row_count = str(len(result_df))
-                            result_df['Row Hash'] = result_df.apply(self.row_hash, axis=1)
+                            result_df['Row Hash'] = result_df.apply(self._row_hash, axis=1)
                             result_df = result_df.sort_values('Row Hash').reset_index(drop=True)
 
                             row_hashes = '|'.join(result_df['Row Hash'].tolist())
