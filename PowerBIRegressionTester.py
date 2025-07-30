@@ -9,6 +9,7 @@ import pandas as pd
 import importlib.util
 from enum import Enum
 import clr
+import re
 class PowerBIRegressionTester:
     """
     A class to perform regression testing on Power BI DAX queries by comparing query results
@@ -127,7 +128,17 @@ class PowerBIRegressionTester:
         # TENANT_ID = 'e39cce29-5716-43ba-b27d-1bdd8fd67901'  # Or your tenant ID
 
 
-
+        if PowerBIRegressionTester._tenant_id is None:
+            raise ValueError("Tenant ID (_tenant_id) must be set before building the interactive connection string.")
+        guid_regex = re.compile(
+            r'^[{(]?[0-9a-fA-F]{8}-'
+            r'[0-9a-fA-F]{4}-'
+            r'[0-9a-fA-F]{4}-'
+            r'[0-9a-fA-F]{4}-'
+            r'[0-9a-fA-F]{12}[)}]?$'
+        )
+        if not isinstance(PowerBIRegressionTester._tenant_id, str) or not guid_regex.match(PowerBIRegressionTester._tenant_id):
+            raise ValueError(f"Tenant ID '{PowerBIRegressionTester._tenant_id}' is not a valid GUID.")
         AUTHORITY = f"https://login.microsoftonline.com/{PowerBIRegressionTester._tenant_id}"
         SCOPES = ["https://analysis.windows.net/powerbi/api/.default"]
         API_BASE = f"https://api.powerbi.com/v1.0/myorg"
@@ -210,16 +221,6 @@ class PowerBIRegressionTester:
 
     @classmethod
     def set_tenant_id(cls, value):
-        import re
-        guid_regex = re.compile(
-            r'^[{(]?[0-9a-fA-F]{8}-'
-            r'[0-9a-fA-F]{4}-'
-            r'[0-9a-fA-F]{4}-'
-            r'[0-9a-fA-F]{4}-'
-            r'[0-9a-fA-F]{12}[)}]?$'
-        )
-        if not isinstance(value, str) or not guid_regex.match(value):
-            raise ValueError(f"Tenant ID '{value}' is not a valid GUID.")
         cls._tenant_id = value
 
     @classmethod
