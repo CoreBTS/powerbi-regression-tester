@@ -104,97 +104,53 @@ class PowerBIRegressionTesterApp:
         ttk.Button(action_frame, text="Update Selected Instance", command=self.run_selected_instance).grid(row=0, column=5, padx=5, pady=5, sticky='w')
 
         # --- Status Bar ---
-        self.status_var = tk.StringVar()
-        status_bar = ttk.Label(self.root, textvariable=self.status_var, relief="sunken", anchor="w")
-        status_bar.grid(row=99, column=0, sticky="ew", padx=0, pady=0)
+        # self.status_var = tk.StringVar()
+        # status_bar = ttk.Label(self.root, textvariable=self.status_var, relief="sunken", anchor="w")
+        # status_bar.grid(row=99, column=0, sticky="ew", padx=0, pady=0)
 
         # Make the main window expand columns
         self.root.columnconfigure(0, weight=1)
 
-    def setup_widgets(self):
-        tk.Label(self.root, text="Project:").grid(row=0, column=0, sticky='e')
-        self.project_folder_dropdown = ttk.Combobox(self.root, textvariable=self.project_folder_var, width=40, state="readonly")
-        self.project_folder_dropdown.grid(row=0, column=1, padx=5, pady=2, sticky='w')
-        self.project_folder_dropdown.bind("<<ComboboxSelected>>", self.on_project_folder_select)
-        tk.Button(self.root, text="Save", command=self.save_current_config).grid(row=0, column=2, padx=2, sticky='w')
-        tk.Button(self.root, text="Delete", command=self.delete_current_config).grid(row=0, column=3, padx=2, sticky='w')
-        tk.Button(self.root, text="New", command=self.create_new_config).grid(row=0, column=4, padx=2, sticky='w')
+    # def setup_widgets(self):
+    #     tk.Label(self.root, text="Project:").grid(row=0, column=0, sticky='e')
+    #     self.project_folder_dropdown = ttk.Combobox(self.root, textvariable=self.project_folder_var, width=40, state="readonly")
+    #     self.project_folder_dropdown.grid(row=0, column=1, padx=5, pady=2, sticky='w')
+    #     self.project_folder_dropdown.bind("<<ComboboxSelected>>", self.on_project_folder_select)
+    #     tk.Button(self.root, text="Save", command=self.save_current_config).grid(row=0, column=2, padx=2, sticky='w')
+    #     tk.Button(self.root, text="Delete", command=self.delete_current_config).grid(row=0, column=3, padx=2, sticky='w')
+    #     tk.Button(self.root, text="New", command=self.create_new_config).grid(row=0, column=4, padx=2, sticky='w')
 
-        # Project folder field
-        tk.Label(self.root, text="PBI Report Folder (optional)").grid(row=1, column=0, sticky='e')
-        entry = tk.Entry(self.root, textvariable=self.pbi_report_folder_var, width=60)
-        entry.grid(row=1, column=1, padx=5, pady=2)
-        tk.Button(self.root, text="Browse", command=lambda v=self.pbi_report_folder_var: self.browse_folder(v)).grid(row=1, column=2, sticky='w')
+    #     # Project folder field
+    #     tk.Label(self.root, text="PBI Report Folder (optional)").grid(row=1, column=0, sticky='e')
+    #     entry = tk.Entry(self.root, textvariable=self.pbi_report_folder_var, width=60)
+    #     entry.grid(row=1, column=1, padx=5, pady=2)
+    #     tk.Button(self.root, text="Browse", command=lambda v=self.pbi_report_folder_var: self.browse_folder(v)).grid(row=1, column=2, sticky='w')
 
-        # Instance dropdown
-        tk.Label(self.root, text="Instance Name").grid(row=2, column=0, sticky='e')
-        self.instance_dropdown = ttk.Combobox(self.root, textvariable=self.instance_name_var, width=40, state="readonly")
-        self.instance_dropdown.grid(row=2, column=1, padx=5, pady=2, sticky='w')
-        tk.Button(self.root, text="Delete", command=self.delete_current_instance, fg="red").grid(row=2, column=2, padx=2, sticky='w')
-        tk.Button(self.root, text="View Instance", command=self.view_instance, bg="white").grid(row=2, column=3, padx=2, sticky='w')
-        tk.Button(self.root, text="Create Instance", command=self.create_instance, bg="lightgreen").grid(row=2, column=4, padx=2, sticky='w')
+    #     # Instance dropdown
+    #     tk.Label(self.root, text="Instance Name").grid(row=2, column=0, sticky='e')
+    #     self.instance_dropdown = ttk.Combobox(self.root, textvariable=self.instance_name_var, width=40, state="readonly")
+    #     self.instance_dropdown.grid(row=2, column=1, padx=5, pady=2, sticky='w')
+    #     tk.Button(self.root, text="Delete", command=self.delete_current_instance, fg="red").grid(row=2, column=2, padx=2, sticky='w')
+    #     tk.Button(self.root, text="View Instance", command=self.view_instance, bg="white").grid(row=2, column=3, padx=2, sticky='w')
+    #     tk.Button(self.root, text="Create Instance", command=self.create_instance, bg="lightgreen").grid(row=2, column=4, padx=2, sticky='w')
 
-        # Action buttons
-        tk.Button(self.root, text="Create Baseline", command=self.run_baseline, bg="lightblue").grid(row=3, column=0, pady=10)
-        tk.Button(self.root, text="View Baseline", command=self.view_baseline, bg="white").grid(row=3, column=1, pady=10, sticky='w')
-        tk.Button(self.root, text="Compare", command=self.run_compare, bg="orange").grid(row=3, column=3, pady=10, sticky='w')
-        tk.Button(self.root, text="Compare Instance To", command=self.compare_to_dialog, bg="orange").grid(row=3, column=4, padx=2, sticky='w')
+    #     # Action buttons
+    #     tk.Button(self.root, text="Create Baseline", command=self.run_baseline, bg="lightblue").grid(row=3, column=0, pady=10)
+    #     tk.Button(self.root, text="View Baseline", command=self.view_baseline, bg="white").grid(row=3, column=1, pady=10, sticky='w')
+    #     tk.Button(self.root, text="Compare", command=self.run_compare, bg="orange").grid(row=3, column=3, pady=10, sticky='w')
+    #     tk.Button(self.root, text="Compare Instance To", command=self.compare_to_dialog, bg="orange").grid(row=3, column=4, padx=2, sticky='w')
 
-        tk.Button(self.root, text="Edit Baseline", command=self.edit_baseline, bg="lightyellow").grid(row=4, column=0, pady=5)
-        tk.Button(self.root, text="Edit Instance", command=self.edit_selected_instance, bg="lightyellow").grid(row=4, column=1, pady=5)
+    #     tk.Button(self.root, text="Edit Baseline", command=self.edit_baseline, bg="lightyellow").grid(row=4, column=0, pady=5)
+    #     tk.Button(self.root, text="Edit Instance", command=self.edit_selected_instance, bg="lightyellow").grid(row=4, column=1, pady=5)
 
-        tk.Button(self.root, text="Update Selected Instance", command=self.run_selected_instance, bg="lightgreen").grid(row=4, column=2, pady=5)
+    #     tk.Button(self.root, text="Update Selected Instance", command=self.run_selected_instance, bg="lightgreen").grid(row=4, column=2, pady=5)
 
-        self.project_folder_var.trace_add("write", lambda *args: self.update_instance_dropdown())
+    #     self.project_folder_var.trace_add("write", lambda *args: self.update_instance_dropdown())
 
     def browse_folder(self, var):
         folder = filedialog.askdirectory()
         if folder:
             var.set(folder)
-
-    def run_selected_instance(self):
-        project = self.get_project(self.project_folder_var.get())
-        if not project:
-            messagebox.showerror("Error", "No project selected.")
-            return
-
-        instance_name = self.instance_dropdown.get().strip()
-        if not instance_name:
-            messagebox.showerror("Error", "No instance selected.")
-            return
-
-        instance = next((inst for inst in project.get("instances", []) if inst["instance_name"] == instance_name), None)
-        if not instance:
-            messagebox.showerror("Error", f"Instance '{instance_name}' not found.")
-            return
-
-
-        # if instance.get("interactive"):
-        #     conn_str = None
-        # else:
-        #     conn_str = (
-        #         f"Provider=MSOLAP;Data Source={instance['server_name']};"
-        #         f"Initial Catalog={instance['database_name']};"
-        #         f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
-        #     )
-
-        # tester = PowerBIRegressionTester(
-        #     self.project_folder_var.get(),
-        #     conn_str,
-        #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
-        # )
-
-        tester = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, instance)
-
-        if tester.instance_exists(instance_name):
-            if not messagebox.askyesno("Overwrite?", f"Instance '{instance_name}' exists. Overwrite?"):
-                return
-
-        df = tester.run_instance(instance_name)
-        if df is not None and not df.empty:
-            self.show_result(df, 'Baseline', instance_name)
-        else:
-            messagebox.showinfo("Compare", "No differences found.")
             
     def update_instance_dropdown(self):
         project = self.get_project(self.project_folder_var.get())
@@ -211,13 +167,13 @@ class PowerBIRegressionTesterApp:
         else:
             self.instance_dropdown.set("")
 
-    def update_config_dropdown(self):
-        config_names = list(self.configs.keys())
-        self.config_dropdown['values'] = config_names
-        if config_names:
-            self.config_dropdown.current(0)
-        else:
-            self.config_dropdown.set("")
+    # def update_config_dropdown(self):
+    #     config_names = list(self.configs.keys())
+    #     self.config_dropdown['values'] = config_names
+    #     if config_names:
+    #         self.config_dropdown.current(0)
+    #     else:
+    #         self.config_dropdown.set("")
 
     def update_project_folder_dropdown(self):
         project_folders = [proj["name"] for proj in self.configs.get("projects", [])]
@@ -363,7 +319,7 @@ class PowerBIRegressionTesterApp:
         dialog.title(f"{instance.get('instance_name', 'Baseline')} Details")
         dialog.grab_set()
         dialog.resizable(False, False)
-        dialog.geometry("380x340")
+        dialog.geometry("470x360")  # Wider window
 
         # Variables
         instance_name_var = tk.StringVar(value=instance.get("instance_name", "Baseline"))
@@ -384,25 +340,27 @@ class PowerBIRegressionTesterApp:
         details.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
         details.columnconfigure(1, weight=1)
 
+        entry_width = 48  # Wider entry fields
+
         ttk.Label(details, text="Instance Name:").grid(row=0, column=0, sticky="e", padx=5, pady=4)
-        name_entry = ttk.Entry(details, textvariable=instance_name_var, width=32)
+        name_entry = ttk.Entry(details, textvariable=instance_name_var, width=entry_width)
         name_entry.config(state="disabled" if instance.get("instance_name", "Baseline") == 'Baseline' else "normal")
         name_entry.grid(row=0, column=1, sticky="ew", padx=5, pady=4)
 
         ttk.Label(details, text="Server Name:").grid(row=1, column=0, sticky="e", padx=5, pady=4)
-        server_entry = ttk.Entry(details, textvariable=server_name_var, width=32)
+        server_entry = ttk.Entry(details, textvariable=server_name_var, width=entry_width)
         server_entry.grid(row=1, column=1, sticky="ew", padx=5, pady=4)
 
         ttk.Label(details, text="Database Name:").grid(row=2, column=0, sticky="e", padx=5, pady=4)
-        db_entry = ttk.Entry(details, textvariable=database_name_var, width=32)
+        db_entry = ttk.Entry(details, textvariable=database_name_var, width=entry_width)
         db_entry.grid(row=2, column=1, sticky="ew", padx=5, pady=4)
 
         ttk.Label(details, text="User ID:").grid(row=3, column=0, sticky="e", padx=5, pady=4)
-        user_entry = ttk.Entry(details, textvariable=user_id_var, width=32)
+        user_entry = ttk.Entry(details, textvariable=user_id_var, width=entry_width)
         user_entry.grid(row=3, column=1, sticky="ew", padx=5, pady=4)
 
         ttk.Label(details, text="Password:").grid(row=4, column=0, sticky="e", padx=5, pady=4)
-        pass_entry = ttk.Entry(details, textvariable=password_var, width=32, show="*")
+        pass_entry = ttk.Entry(details, textvariable=password_var, width=entry_width, show="*")
         pass_entry.grid(row=4, column=1, sticky="ew", padx=5, pady=4)
 
         # --- Options Frame ---
@@ -410,12 +368,16 @@ class PowerBIRegressionTesterApp:
         options.grid(row=1, column=0, sticky="ew", padx=5, pady=(0, 5))
         options.columnconfigure(0, weight=1)
 
+        # Configure columns for even distribution
+        for i in range(3):
+            options.columnconfigure(i, weight=1)
+
         interactive_chk = ttk.Checkbutton(options, text="Interactive", variable=interactive_var)
-        interactive_chk.grid(row=0, column=0, sticky="w", padx=2, pady=2)
+        interactive_chk.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
         xmla_chk = ttk.Checkbutton(options, text="XMLA Endpoint", variable=xmla_endpoint_var)
-        xmla_chk.grid(row=0, column=1, sticky="w", padx=2, pady=2)
+        xmla_chk.grid(row=0, column=1, sticky="ew", padx=2, pady=2)
         local_chk = ttk.Checkbutton(options, text="Local Instance", variable=local_instance_var)
-        local_chk.grid(row=0, column=2, sticky="w", padx=2, pady=2)
+        local_chk.grid(row=0, column=2, sticky="ew", padx=2, pady=2)
 
         # --- Field Enable/Disable Logic ---
         def toggle_fields(*args):
@@ -1266,83 +1228,117 @@ class PowerBIRegressionTesterApp:
                         notebook.add(frame, text=tab_name)
                         
             # --- Status Bar ---
-            status_var = tk.StringVar(value="Ready")
-            status_bar = ttk.Label(result_window, textvariable=status_var, relief="sunken", anchor="w")
-            status_bar.pack(fill="x", side="bottom")
+            # status_var = tk.StringVar(value="Ready")
+            # status_bar = ttk.Label(result_window, textvariable=status_var, relief="sunken", anchor="w")
+            # status_bar.pack(fill="x", side="bottom")
                                                         
     
     def view_baseline(self):
-        project = self.get_project(self.project_folder_var.get())
-        if not project:
-            messagebox.showerror("Error", "No project selected.")
-            return
-        instance = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == "baseline"), None)
-        if not instance:
-            messagebox.showerror("Error", "No baseline exists for this project.")
-            return
+        self.view("Baseline")
+        # project = self.get_project(self.project_folder_var.get())
+        # if not project:
+        #     messagebox.showerror("Error", "No project selected.")
+        #     return
+        # instance = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == "baseline"), None)
+        # if not instance:
+        #     messagebox.showerror("Error", "No baseline exists for this project.")
+        #     return
 
-        # if instance.get("interactive"):
-        #     conn_str = None  # Or handle interactive logic in your tester
-        # else:
-        #     conn_str = (
-        #         f"Provider=MSOLAP;Data Source={instance['server_name']};"
-        #         f"Initial Catalog={instance['database_name']};"
-        #         f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
-        #     )
+        # # if instance.get("interactive"):
+        # #     conn_str = None  # Or handle interactive logic in your tester
+        # # else:
+        # #     conn_str = (
+        # #         f"Provider=MSOLAP;Data Source={instance['server_name']};"
+        # #         f"Initial Catalog={instance['database_name']};"
+        # #         f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
+        # #     )
 
-        # tester = PowerBIRegressionTester(
-        #     self.project_folder_var.get(),
-        #     conn_str,
-        #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
-        # )
+        # # tester = PowerBIRegressionTester(
+        # #     self.project_folder_var.get(),
+        # #     conn_str,
+        # #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
+        # # )
 
-        tester = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, instance)
+        # tester = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, instance)
 
-        if not tester.baseline_exists():
-            messagebox.showerror("Error", "No baseline exists for this project.")
-            return
-        df = tester.load_baseline_df()
-        self.show_result(df, instance["instance_name"])
+        # if not tester.baseline_exists():
+        #     messagebox.showerror("Error", "No baseline exists for this project.")
+        #     return
+        # df = tester.load_baseline_df()
+        # self.show_result(df, instance["instance_name"])
 
     def view_instance(self):
         instance_name = self.instance_dropdown.get().strip()
-        if not instance_name:
-            messagebox.showerror("Error", "No instance selected.")
-            return
+        self.view(instance_name)
+        # if not instance_name:
+        #     messagebox.showerror("Error", "No instance selected.")
+        #     return
 
+        # project = self.get_project(self.project_folder_var.get())
+        # if not project:
+        #     messagebox.showerror("Error", "No project selected.")
+        #     return
+
+        # instance = next((inst for inst in project.get("instances", []) if inst["instance_name"] == instance_name), None)
+        # if not instance:
+        #     messagebox.showerror("Error", f"Instance '{instance_name}' does not exist.")
+        #     return
+
+        # # if instance.get("interactive"):
+        # #     conn_str = None  # Or handle interactive logic in your tester
+        # # else:
+        # #     conn_str = (
+        # #         f"Provider=MSOLAP;Data Source={instance['server_name']};"
+        # #         f"Initial Catalog={instance['database_name']};"
+        # #         f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
+        # #     )
+
+        # # tester = PowerBIRegressionTester(
+        # #     self.project_folder_var.get(),
+        # #     conn_str,
+        # #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
+        # # )
+
+        # tester = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, instance)
+
+        # if not tester.instance_exists(instance_name):
+        #     messagebox.showerror("Error", f"Instance '{instance_name}' does not exist in the file system.")
+        #     return
+        # df = tester.load_instance_df(instance_name)
+        # self.show_result(df, instance_name)
+        
+
+    def view(self, instance_name):
+        # instance_name = self.instance_dropdown.get().strip()
         project = self.get_project(self.project_folder_var.get())
         if not project:
             messagebox.showerror("Error", "No project selected.")
             return
 
-        instance = next((inst for inst in project.get("instances", []) if inst["instance_name"] == instance_name), None)
-        if not instance:
-            messagebox.showerror("Error", f"Instance '{instance_name}' does not exist.")
+        if not instance_name:
+            messagebox.showerror("Error", "No baseline or instance selected.")
             return
 
-        # if instance.get("interactive"):
-        #     conn_str = None  # Or handle interactive logic in your tester
-        # else:
-        #     conn_str = (
-        #         f"Provider=MSOLAP;Data Source={instance['server_name']};"
-        #         f"Initial Catalog={instance['database_name']};"
-        #         f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
-        #     )
-
-        # tester = PowerBIRegressionTester(
-        #     self.project_folder_var.get(),
-        #     conn_str,
-        #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
-        # )
+        instance = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == instance_name.lower()), None)
+        if not instance:
+            messagebox.showerror("Error", f"'{instance_name}' does not exist.")
+            return
 
         tester = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, instance)
 
-        if not tester.instance_exists(instance_name):
-            messagebox.showerror("Error", f"Instance '{instance_name}' does not exist in the file system.")
-            return
-        df = tester.load_instance_df(instance_name)
+        if instance_name.lower() == "baseline":
+            if not tester.baseline_exists():
+                messagebox.showerror("Error", "No baseline exists for this project.")
+                return
+            df = tester.load_baseline_df()
+        else:
+            if not tester.instance_exists(instance_name):
+                messagebox.showerror("Error", f"Instance '{instance_name}' does not exist in the file system.")
+                return
+            df = tester.load_instance_df(instance_name)
+
         self.show_result(df, instance_name)
-        
+
     def run_baseline(self):
         project = self.get_project(self.project_folder_var.get())
         if not project:
@@ -1362,28 +1358,39 @@ class PowerBIRegressionTesterApp:
             # Baseline exists, ask to overwrite
             if not messagebox.askyesno("Overwrite?", "Baseline exists. Overwrite?"):
                 return
-            # Use the existing baseline config (do not prompt again)
-
-        # Build connection string
-        # if instance.get("interactive"):
-        #     conn_str = None
-        # else:
-        #     conn_str = (
-        #         f"Provider=MSOLAP;Data Source={instance['server_name']};"
-        #         f"Initial Catalog={instance['database_name']};"
-        #         f"User ID={instance['user_id']};Password={self.decrypt_for_user(instance['password'])}"
-        #     )
-
-        # tester = PowerBIRegressionTester(
-        #     self.project_folder_var.get(),
-        #     conn_str,
-        #     self.pbi_report_folder_var.get() if self.pbi_report_folder_var.get() else ""
-        # )
 
         tester = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, instance)
 
         df = tester.run_baseline()
         self.show_result(df, 'Baseline')
+
+    def run_selected_instance(self):
+        project = self.get_project(self.project_folder_var.get())
+        if not project:
+            messagebox.showerror("Error", "No project selected.")
+            return
+
+        instance_name = self.instance_dropdown.get().strip()
+        if not instance_name:
+            messagebox.showerror("Error", "No instance selected.")
+            return
+
+        instance = next((inst for inst in project.get("instances", []) if inst["instance_name"] == instance_name), None)
+        if not instance:
+            messagebox.showerror("Error", f"Instance '{instance_name}' not found.")
+            return
+
+        tester = self.create_regession_tester(self.project_folder_var, self.pbi_report_folder_var, instance)
+
+        if tester.instance_exists(instance_name):
+            if not messagebox.askyesno("Overwrite?", f"Instance '{instance_name}' exists. Overwrite?"):
+                return
+
+        df = tester.run_instance(instance_name)
+        if df is not None and not df.empty:
+            self.show_result(df, 'Baseline', instance_name)
+        else:
+            messagebox.showinfo("Compare", "No differences found.")
 
     def create_instance(self):
         project = self.get_project(self.project_folder_var.get())
