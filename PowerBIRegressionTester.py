@@ -2,6 +2,7 @@ import os
 import sys
 from sys import path
 import msal
+import datetime
 import json
 import glob
 import hashlib
@@ -773,11 +774,11 @@ class PowerBIRegressionTester:
     def _compare_internal(self, instance_one_df, instance_two_df, ignore_list):
         # Remove rows from both DataFrames where ID is in ignore_list
         if ignore_list:
-            instance_one_df = instance_one_df[~instance_one_df['ID'].isin(ignore_list)]
-            instance_two_df = instance_two_df[~instance_two_df['ID'].isin(ignore_list)]
+            instance_one_df = instance_one_df[~instance_one_df['Query ID'].isin(ignore_list)]
+            instance_two_df = instance_two_df[~instance_two_df['Query ID'].isin(ignore_list)]
 
         comparison_df = instance_one_df.merge(
-            instance_two_df, on='ID', suffixes=('_baseline', ''), how='outer', indicator=True
+            instance_two_df, on='Query ID', suffixes=('_baseline', ''), how='outer', indicator=True
         )
 
         diff_mask = (comparison_df['_merge'] == 'both') & (
@@ -792,21 +793,25 @@ class PowerBIRegressionTester:
         comparison_df['Hash Match'] = ~diff_mask
         value_diffs = comparison_df
 
-        desired_columns = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount', 'RowCount_baseline', '_merge', 'Query Hash', 'Query Hash_baseline', 'Hash Match']
-        value_diffs = value_diffs[desired_columns]
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        value_diffs['Create Date'] = now_str
 
-        # Rename columns if needed before selecting
-        value_diffs = value_diffs.rename(columns={
-        'ID': 'Query ID',
-        'PageName': 'Page Name',
-        'VisualID': 'Visual ID',
-        'ResultSets': 'Result Sets',
-        'RowCount': 'RowCount Instance',
-        'RowCount_baseline': 'RowCount Baseline',
-        '_merge': 'Merge',
-        'Query Hash': 'Query Hash',
-        'Query Hash_baseline': 'Query Hash Baseline'
-        })
+        column_map = {
+            'ID': 'Query ID',
+            'Query': 'Query',
+            'PageName': 'Page Name',
+            'VisualID': 'Visual ID',
+            'ResultSets': 'Result Sets',
+            'RowCount': 'RowCount Instance',
+            'RowCount_baseline': 'RowCount Baseline',
+            '_merge': 'Merge',
+            'Query Hash': 'Query Hash',
+            'Query Hash_baseline': 'Query Hash Baseline',
+            'Hash Match': 'Hash Match',
+            'Create Date': 'Create Date'
+        }
+        desired_columns = list(column_map.keys())
+        value_diffs = value_diffs.loc[:, desired_columns].rename(columns=column_map)
 
         return value_diffs
 
@@ -863,6 +868,23 @@ class PowerBIRegressionTester:
         combined = '|'.join(all_hashes)
         final_overall_hash = hashlib.sha256(combined.encode('utf-8')).hexdigest()
         combined_df['Instance Hash'] = final_overall_hash
+
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        combined_df['Create Date'] = now_str
+
+        column_map = {
+            'ID': 'Query ID',
+            'Query': 'Query',
+            'PageName': 'Page Name',
+            'VisualID': 'Visual ID',
+            'ResultSets': 'Result Sets',
+            'RowCount': 'RowCount Instance',
+            'Query Hash': 'Query Hash',
+            'Instance Hash': 'Instance Hash',
+            'Create Date': 'Create Date'
+        }
+        desired_columns = list(column_map.keys())
+        combined_df = combined_df.loc[:, desired_columns].rename(columns=column_map)
 
         return combined_df
 

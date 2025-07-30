@@ -366,7 +366,45 @@ class PowerBIRegressionTesterApp:
         dialog.title(f"{instance.get('instance_name', 'Baseline')} Details")
         dialog.grab_set()
         dialog.resizable(False, False)
-        dialog.geometry("470x360")  # Wider window
+        dialog.geometry("470x340")  # Wider window
+
+        # --- Menu Bar ---
+        menu_bar = tk.Menu(dialog)
+        template_menu = tk.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="Template", menu=template_menu)
+
+        def apply_pro_template():
+            server_name_var.set("(blank)")
+            database_name_var.set("WorkspaceGUID")
+            user_id_var.set("")
+            password_var.set("")
+            interactive_var.set(True)
+            xmla_endpoint_var.set(False)
+            local_instance_var.set(False)
+
+        def apply_xmla_template():
+            server_name_var.set("powerbi://api.powerbi.com/v1.0/myorg/YourWorkspace")
+            database_name_var.set("ModelName")
+            user_id_var.set("app:AppID@TenantID")
+            password_var.set("YourSecret")
+            interactive_var.set(False)
+            xmla_endpoint_var.set(True)
+            local_instance_var.set(False)
+
+        def apply_local_template():
+            server_name_var.set("localhost:PortNumber")
+            database_name_var.set("ModelGUID")
+            user_id_var.set("")
+            password_var.set("")
+            interactive_var.set(False)
+            xmla_endpoint_var.set(False)
+            local_instance_var.set(True)
+
+        template_menu.add_command(label="Power BI Pro Template", command=apply_pro_template)
+        template_menu.add_command(label="XMLA Endpoint Template", command=apply_xmla_template)
+        template_menu.add_command(label="Local Instance Template", command=apply_local_template)
+
+        dialog.config(menu=menu_bar)
 
         # Variables
         instance_name_var = tk.StringVar(value=instance.get("instance_name", "Baseline"))
@@ -428,8 +466,8 @@ class PowerBIRegressionTesterApp:
 
         # --- Field Enable/Disable Logic ---
         def toggle_fields(*args):
-            user_entry.config(state="disabled" if interactive_var.get() else "normal")
-            pass_entry.config(state="disabled" if interactive_var.get() else "normal")
+            user_entry.config(state="disabled" if interactive_var.get() or local_instance_var.get() else "normal")
+            pass_entry.config(state="disabled" if interactive_var.get() or local_instance_var.get() else "normal")
             server_entry.config(state="normal")
             db_entry.config(state="normal")
             if local_instance_var.get():
