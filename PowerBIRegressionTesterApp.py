@@ -434,46 +434,101 @@ class PowerBIRegressionTesterApp:
 
         ttk.Label(details, text="Instance Name:").grid(row=0, column=0, sticky="e", padx=5, pady=4)
         name_entry = ttk.Entry(details, textvariable=instance_name_var, width=entry_width)
-        name_entry.config(state="disabled" if instance.get("instance_name", "Baseline") == 'Baseline' else "normal")
+        name_entry.config(state="normal" if instance.get("instance_name", "") == "" else "disabled")
         name_entry.grid(row=0, column=1, sticky="ew", padx=5, pady=4)
+        help_btn = tk.Label(details, text="?", foreground="blue", cursor="question_arrow")
+        help_btn.grid(row=0, column=2, sticky="w", padx=2)
+        ToolTip(help_btn, "The name of this instance. Cannot be changed for Baseline.")
 
         ttk.Label(details, text="Server Name:").grid(row=1, column=0, sticky="e", padx=5, pady=4)
         server_entry = ttk.Entry(details, textvariable=server_name_var, width=entry_width)
         server_entry.grid(row=1, column=1, sticky="ew", padx=5, pady=4)
+        help_btn = tk.Label(details, text="?", foreground="blue", cursor="question_arrow")
+        help_btn.grid(row=1, column=2, sticky="w", padx=2)
+        ToolTip(help_btn, "The Power BI server address or XMLA endpoint.")
 
         ttk.Label(details, text="Database Name:").grid(row=2, column=0, sticky="e", padx=5, pady=4)
         db_entry = ttk.Entry(details, textvariable=database_name_var, width=entry_width)
         db_entry.grid(row=2, column=1, sticky="ew", padx=5, pady=4)
+        help_btn = tk.Label(details, text="?", foreground="blue", cursor="question_arrow")
+        help_btn.grid(row=2, column=2, sticky="w", padx=2)
+        ToolTip(help_btn, "If using an XMLA Endpoing, use semantic model name.\n\nIf using Power BI Pro, to use semantic model GUID exposed in the service.\n\nIf using a local instance, use the model GUID.\nThis can be obtained by running a DMV query in DAX Studio ( select * from $SYSTEM.DBSCHEMA_CATALOGS )")
 
         ttk.Label(details, text="User ID:").grid(row=3, column=0, sticky="e", padx=5, pady=4)
         user_entry = ttk.Entry(details, textvariable=user_id_var, width=entry_width)
         user_entry.grid(row=3, column=1, sticky="ew", padx=5, pady=4)
+        help_btn = tk.Label(details, text="?", foreground="blue", cursor="question_arrow")
+        help_btn.grid(row=3, column=2, sticky="w", padx=2)
+        ToolTip(help_btn, "App ID when using an XMLA Endpoint (leave blank for interactive).")
 
         ttk.Label(details, text="Password:").grid(row=4, column=0, sticky="e", padx=5, pady=4)
         pass_entry = ttk.Entry(details, textvariable=password_var, width=entry_width, show="*")
         pass_entry.grid(row=4, column=1, sticky="ew", padx=5, pady=4)
+        help_btn = tk.Label(details, text="?", foreground="blue", cursor="question_arrow")
+        help_btn.grid(row=4, column=2, sticky="w", padx=2)
+        ToolTip(help_btn, "Secret when using an XMLA Endpoint (leave blank for interactive).")
 
         # --- Tenant ID field ---
         ttk.Label(details, text="Tenant ID:").grid(row=5, column=0, sticky="e", padx=5, pady=4)
         tenant_entry = ttk.Entry(details, textvariable=tenant_id_var, width=entry_width)
         tenant_entry.grid(row=5, column=1, sticky="ew", padx=5, pady=4)
-
+        help_btn = tk.Label(details, text="?", foreground="blue", cursor="question_arrow")
+        help_btn.grid(row=5, column=2, sticky="w", padx=2)
+        ToolTip(help_btn, "Azure Tenant ID (required for interactive authentication).")
 
         # --- Options Frame ---
         options = ttk.LabelFrame(main_frame, text="Connection Options", padding=(10, 10))
         options.grid(row=1, column=0, sticky="ew", padx=5, pady=(0, 5))
         options.columnconfigure(0, weight=1)
+        options.columnconfigure(1, weight=1)
+        options.columnconfigure(2, weight=1)
+
+        # Helper function to create a checkbox with a right-aligned tooltip icon
+        def add_checkbox_with_tooltip(parent, row, text, variable, tooltip_text):
+            frame = ttk.Frame(parent)
+            frame.grid(row=0, column=row, sticky="w", padx=2, pady=2)
+            chk = ttk.Checkbutton(frame, text=text, variable=variable)
+            chk.pack(side="left")
+            help_btn = tk.Label(frame, text="?", foreground="blue", cursor="question_arrow")
+            help_btn.pack(side="left", padx=(2, 0))  # Small space between checkbox and icon
+            ToolTip(help_btn, tooltip_text)
+            return chk
+
+        # Usage:
+        interactive_chk = add_checkbox_with_tooltip(
+            options, 0, "Interactive", interactive_var,
+            "Enable Interactive authentication to the Power BI Service (XMLA Endpoints and Pro Workspace)."
+        )
+        xmla_chk = add_checkbox_with_tooltip(
+            options, 1, "XMLA Endpoint", xmla_endpoint_var,
+            "Connect using an XMLA endpoint."
+        )
+        local_chk = add_checkbox_with_tooltip(
+            options, 2, "Local Instance", local_instance_var,
+            "Connect to a local Semantic Model instance (requires local model GUID as the Database Name)."
+        )
 
         # Configure columns for even distribution
-        for i in range(3):
-            options.columnconfigure(i, weight=1)
+        # for i in range(3):
+        #     options.columnconfigure(i, weight=1)
 
-        interactive_chk = ttk.Checkbutton(options, text="Interactive", variable=interactive_var)
-        interactive_chk.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
-        xmla_chk = ttk.Checkbutton(options, text="XMLA Endpoint", variable=xmla_endpoint_var)
-        xmla_chk.grid(row=0, column=1, sticky="ew", padx=2, pady=2)
-        local_chk = ttk.Checkbutton(options, text="Local Instance", variable=local_instance_var)
-        local_chk.grid(row=0, column=2, sticky="ew", padx=2, pady=2)
+        # interactive_chk = ttk.Checkbutton(options, text="Interactive", variable=interactive_var)
+        # interactive_chk.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
+        # help_btn = tk.Label(options, text="?", foreground="blue", cursor="question_arrow")
+        # help_btn.grid(row=0, column=1, sticky="w", padx=2)
+        # ToolTip(help_btn, "Enable Interactive authentication to the Power BI Service (XMLA Endpoints and Pro Workspace).")
+
+        # xmla_chk = ttk.Checkbutton(options, text="XMLA Endpoint", variable=xmla_endpoint_var)
+        # xmla_chk.grid(row=0, column=2, sticky="ew", padx=2, pady=2)
+        # help_btn = tk.Label(options, text="?", foreground="blue", cursor="question_arrow")
+        # help_btn.grid(row=0, column=3, sticky="w", padx=2)
+        # ToolTip(help_btn, "Connect using an XMLA endpoint.")
+
+        # local_chk = ttk.Checkbutton(options, text="Local Instance", variable=local_instance_var)
+        # local_chk.grid(row=0, column=4, sticky="ew", padx=2, pady=2)
+        # help_btn_local = tk.Label(options, text="?", foreground="blue", cursor="question_arrow")
+        # help_btn_local.grid(row=0, column=5, sticky="w", padx=2)
+        # ToolTip(help_btn_local, "Connect to a local Semantic Model instance (requires local model GUID as the Database Name).")
 
         # --- Field Enable/Disable Logic ---
         def toggle_fields(*args):
@@ -1644,7 +1699,6 @@ class PowerBIRegressionTesterApp:
 
         return tester
 
-# Simple tooltip class for Tkinter widgets
 class ToolTip(object):
     def __init__(self, widget, text):
         self.widget = widget
@@ -1656,16 +1710,31 @@ class ToolTip(object):
     def show_tip(self, event=None):
         if self.tipwindow or not self.text:
             return
-        x, y, _, cy = self.widget.bbox("insert")
-        x = x + self.widget.winfo_rootx() + 25
-        y = y + cy + self.widget.winfo_rooty() + 10
+        # Position below and to the right of the widget
+        x, y, _, cy = self.widget.bbox("insert") if self.widget.winfo_class() == 'Entry' else (0, 0, 0, 0)
+        x = x + self.widget.winfo_rootx() + 30
+        y = y + cy + self.widget.winfo_rooty() + 20
         self.tipwindow = tw = tk.Toplevel(self.widget)
         tw.wm_overrideredirect(True)
         tw.wm_geometry(f"+{x}+{y}")
-        label = tk.Label(tw, text=self.text, justify='left',
-                         background="#ffffe0", relief='solid', borderwidth=1,
-                         font=("tahoma", "8", "normal"))
-        label.pack(ipadx=1)
+        # Modern style: larger font, more padding, rounded border, shadow
+        label = tk.Label(
+            tw,
+            text=self.text,
+            justify='left',
+            background="#222",
+            foreground="#fff",
+            relief='solid',
+            borderwidth=2,
+            font=("Segoe UI", 12, "normal"),
+            padx=16,
+            pady=10,
+            wraplength=350
+        )
+        label.pack(ipadx=1, ipady=1)
+        # Optional: add a drop shadow effect (simulate with another label)
+        # shadow = tk.Label(tw, background="#444", borderwidth=0)
+        # shadow.place(x=2, y=2)
 
     def hide_tip(self, event=None):
         tw = self.tipwindow
