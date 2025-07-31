@@ -6,6 +6,7 @@ import shutil
 import base64
 import sys
 import pandas as pd
+import re
 
 if sys.platform == "win32":
     import win32crypt
@@ -34,51 +35,51 @@ class PowerBIRegressionTesterApp:
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         # PowerBIRegressionTester.set_tenant_id('e39cce29-5716-43ba-b27d-1bdd8fd67901')
-        self.ensure_tenant_id()
+        # self.ensure_tenant_id()
 
-    def ensure_tenant_id(self):
-        # Load config (assuming self.configs is your loaded JSON dict)
-        tenant_id = self.configs.get("tenant_id", None)
-        if tenant_id is None:
-            tenant_id = self.prompt_for_tenant_id()
-            if tenant_id is not None:  # User didn't cancel
-                self.configs["tenant_id"] = tenant_id
-                self.save_all_configs()  # Save back to file
-        # Set it on your class/static property if needed
-        PowerBIRegressionTester.set_tenant_id(tenant_id or "")
+    # def ensure_tenant_id(self):
+    #     # Load config (assuming self.configs is your loaded JSON dict)
+    #     tenant_id = self.configs.get("tenant_id", None)
+    #     if tenant_id is None:
+    #         tenant_id = self.prompt_for_tenant_id()
+    #         if tenant_id is not None:  # User didn't cancel
+    #             self.configs["tenant_id"] = tenant_id
+    #             self.save_all_configs()  # Save back to file
+    #     # Set it on your class/static property if needed
+    #     PowerBIRegressionTester.set_tenant_id(tenant_id or "")
 
-    def prompt_for_tenant_id(self):
-        import tkinter as tk
-        from tkinter import simpledialog, messagebox
+    # def prompt_for_tenant_id(self):
+    #     import tkinter as tk
+    #     from tkinter import simpledialog, messagebox
 
-        dialog = tk.Toplevel(self.root)
-        dialog.title("Enter Tenant ID")
-        dialog.grab_set()
-        dialog.resizable(False, False)
-        dialog.geometry("400x150")
+    #     dialog = tk.Toplevel(self.root)
+    #     dialog.title("Enter Tenant ID")
+    #     dialog.grab_set()
+    #     dialog.resizable(False, False)
+    #     dialog.geometry("400x150")
 
-        tk.Label(dialog, text="Please enter your Azure Tenant ID (can be blank):").pack(pady=10)
-        tenant_var = tk.StringVar()
-        entry = tk.Entry(dialog, textvariable=tenant_var, width=40)
-        entry.pack(pady=5)
-        entry.focus_set()
+    #     tk.Label(dialog, text="Please enter your Azure Tenant ID (can be blank):").pack(pady=10)
+    #     tenant_var = tk.StringVar()
+    #     entry = tk.Entry(dialog, textvariable=tenant_var, width=40)
+    #     entry.pack(pady=5)
+    #     entry.focus_set()
 
-        result = {"value": None}
+    #     result = {"value": None}
 
-        def on_ok():
-            result["value"] = tenant_var.get().strip()
-            dialog.destroy()
+    #     def on_ok():
+    #         result["value"] = tenant_var.get().strip()
+    #         dialog.destroy()
 
-        def on_cancel():
-            dialog.destroy()
+    #     def on_cancel():
+    #         dialog.destroy()
 
-        btn_frame = tk.Frame(dialog)
-        btn_frame.pack(pady=10)
-        tk.Button(btn_frame, text="OK", width=10, command=on_ok).pack(side="left", padx=5)
-        tk.Button(btn_frame, text="Cancel", width=10, command=on_cancel).pack(side="left", padx=5)
+    #     btn_frame = tk.Frame(dialog)
+    #     btn_frame.pack(pady=10)
+    #     tk.Button(btn_frame, text="OK", width=10, command=on_ok).pack(side="left", padx=5)
+    #     tk.Button(btn_frame, text="Cancel", width=10, command=on_cancel).pack(side="left", padx=5)
 
-        dialog.wait_window()
-        return result["value"]
+    #     dialog.wait_window()
+    #     return result["value"]
 
     def encrypt_for_user(self, plaintext):
         if sys.platform != "win32":
@@ -366,7 +367,7 @@ class PowerBIRegressionTesterApp:
         dialog.title(f"{instance.get('instance_name', 'Baseline')} Details")
         dialog.grab_set()
         dialog.resizable(False, False)
-        dialog.geometry("470x340")  # Wider window
+        dialog.geometry("470x360")  # Wider window
 
         # --- Menu Bar ---
         menu_bar = tk.Menu(dialog)
@@ -378,6 +379,7 @@ class PowerBIRegressionTesterApp:
             database_name_var.set("WorkspaceGUID")
             user_id_var.set("")
             password_var.set("")
+            tenant_id_var.set("TenantID")
             interactive_var.set(True)
             xmla_endpoint_var.set(False)
             local_instance_var.set(False)
@@ -385,8 +387,9 @@ class PowerBIRegressionTesterApp:
         def apply_xmla_template():
             server_name_var.set("powerbi://api.powerbi.com/v1.0/myorg/YourWorkspace")
             database_name_var.set("ModelName")
-            user_id_var.set("app:AppID@TenantID")
+            user_id_var.set("AppID")
             password_var.set("YourSecret")
+            tenant_id_var.set("TenantID")
             interactive_var.set(False)
             xmla_endpoint_var.set(True)
             local_instance_var.set(False)
@@ -396,6 +399,7 @@ class PowerBIRegressionTesterApp:
             database_name_var.set("ModelGUID")
             user_id_var.set("")
             password_var.set("")
+            tenant_id_var.set("TenantID")
             interactive_var.set(False)
             xmla_endpoint_var.set(False)
             local_instance_var.set(True)
@@ -412,6 +416,7 @@ class PowerBIRegressionTesterApp:
         database_name_var = tk.StringVar(value=instance.get("database_name", ""))
         user_id_var = tk.StringVar(value=instance.get("user_id", ""))
         password_var = tk.StringVar(value=self.decrypt_for_user(instance.get("password", "")))
+        tenant_id_var = tk.StringVar(value=instance.get("tenant_id", ""))  # NEW
         interactive_var = tk.BooleanVar(value=instance.get("interactive", False))
         xmla_endpoint_var = tk.BooleanVar(value=instance.get("xmla_endpoint", False))
         local_instance_var = tk.BooleanVar(value=instance.get("local_instance", False))
@@ -448,6 +453,12 @@ class PowerBIRegressionTesterApp:
         pass_entry = ttk.Entry(details, textvariable=password_var, width=entry_width, show="*")
         pass_entry.grid(row=4, column=1, sticky="ew", padx=5, pady=4)
 
+        # --- Tenant ID field ---
+        ttk.Label(details, text="Tenant ID:").grid(row=5, column=0, sticky="e", padx=5, pady=4)
+        tenant_entry = ttk.Entry(details, textvariable=tenant_id_var, width=entry_width)
+        tenant_entry.grid(row=5, column=1, sticky="ew", padx=5, pady=4)
+
+
         # --- Options Frame ---
         options = ttk.LabelFrame(main_frame, text="Connection Options", padding=(10, 10))
         options.grid(row=1, column=0, sticky="ew", padx=5, pady=(0, 5))
@@ -468,6 +479,7 @@ class PowerBIRegressionTesterApp:
         def toggle_fields(*args):
             user_entry.config(state="disabled" if interactive_var.get() or local_instance_var.get() else "normal")
             pass_entry.config(state="disabled" if interactive_var.get() or local_instance_var.get() else "normal")
+            tenant_entry.config(state="disabled" if local_instance_var.get() else "normal")  # Disable for Local Instance
             server_entry.config(state="normal")
             db_entry.config(state="normal")
             if local_instance_var.get():
@@ -499,14 +511,49 @@ class PowerBIRegressionTesterApp:
                 return
             result["server_name"] = server_name_var.get().strip()
             result["database_name"] = database_name_var.get().strip()
+            result["user_id"] = user_id_var.get().strip()
+            result["password"] = self.encrypt_for_user(password_var.get())
+            result["tenant_id"] = tenant_id_var.get().strip()  # NEW
             result["xmla_endpoint"] = xmla_endpoint_var.get()
             result["local_instance"] = local_instance_var.get()
-            if not result["interactive"]:
-                result["user_id"] = user_id_var.get().strip()
-                result["password"] = self.encrypt_for_user(password_var.get())
+
+            if result["local_instance"]:
                 if not all([result["server_name"], result["database_name"]]):
-                    messagebox.showerror("Error", "All fields are required unless Interactive is checked.", parent=dialog)
+                    messagebox.showerror("Error", "Server Name and Database Name are required for a Local Instance.", parent=dialog)
                     return
+            else:
+                if result["interactive"]:
+                    if not all([result["tenant_id"]]):
+                        messagebox.showerror("Error", "Tenant ID is required for interactive authentication.", parent=dialog)
+                        return
+                    
+                    guid_regex = re.compile(
+                        r'^[{(]?[0-9a-fA-F]{8}-'
+                        r'[0-9a-fA-F]{4}-'
+                        r'[0-9a-fA-F]{4}-'
+                        r'[0-9a-fA-F]{4}-'
+                        r'[0-9a-fA-F]{12}[)}]?$'
+                    )
+                    if not isinstance(result["tenant_id"], str) or not guid_regex.match(result["tenant_id"]):
+                        messagebox.showerror("Error", f"Tenant ID '{result['tenant_id']}' is not a valid GUID.", parent=dialog)
+                        return
+                else:
+                    if result["xmla_endpoint"]:
+                        if not all([result["server_name"], result["database_name"], result["user_id"], result["password"], result["tenant_id"]]):
+                            messagebox.showerror("Error", "Server Name, Database Name, User ID, Password and Tenant ID are required for XMLA Endpoint.", parent=dialog)
+                            return
+
+                # if not result["interactive"]:
+                #     result["user_id"] = user_id_var.get().strip()
+                #     result["password"] = self.encrypt_for_user(password_var.get())
+                #     if not all([result["server_name"], result["database_name"]]):
+                #         messagebox.showerror("Error", "User ID and Password are required unless using Interactive.", parent=dialog)
+                #         return
+                # elif result["interactive"]:
+                #     if not all([result["tenant_id"]]):
+                #         messagebox.showerror("Error", "Tenant ID is required for interactive authentication.", parent=dialog)
+                #         return
+
             dialog.destroy()
 
         def on_cancel():
@@ -580,7 +627,7 @@ class PowerBIRegressionTesterApp:
         # instance = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == "baseline"), None)
         instance = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == instance_name.lower()), None)
         if not instance:
-            messagebox.showerror("Error", f"{instance_name} found.")
+            messagebox.showerror("Error", f"{instance_name} not found.")
             return
         edited = self.prompt_instance_details(instance)
         if not edited:
@@ -799,7 +846,7 @@ class PowerBIRegressionTesterApp:
             # if "Query Hash" in df.columns and "Query Hash Baseline" in df.columns:
             #     df["Hash Match"] = df["Query Hash"] == df["Query Hash Baseline"]
             #     df["Hash Match"] = df["Hash Match"].replace({True: "Match", False: "Mismatch"})
-            diff_count = df["Hash Match"].sum() if "Hash Match" in df.columns else 0
+            diff_count = (df["Hash Match"] == False).sum() if "Hash Match" in df.columns else 0
             total_count = len(df)
             diff_summary = f"Differences found: {diff_count} of {total_count}"
 
@@ -1577,6 +1624,7 @@ class PowerBIRegressionTesterApp:
         database = instance.get('database_name')
         user_id = instance.get('user_id')
         password = self.decrypt_for_user(instance.get('password', ''))
+        tenant_id = instance.get('tenant_id', '')
         interactive = instance.get("interactive", False)
         xmla_endpoint = instance.get("xmla_endpoint", False)
         local_instance = instance.get("local_instance", False)
@@ -1588,6 +1636,7 @@ class PowerBIRegressionTesterApp:
             database=database,
             user_id=user_id,
             password=password,
+            tenant_id=tenant_id,
             interactive=interactive,
             xmla_endpoint=xmla_endpoint,
             local_instance=local_instance
@@ -1595,7 +1644,38 @@ class PowerBIRegressionTesterApp:
 
         return tester
 
+# Simple tooltip class for Tkinter widgets
+class ToolTip(object):
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tipwindow = None
+        widget.bind("<Enter>", self.show_tip)
+        widget.bind("<Leave>", self.hide_tip)
+
+    def show_tip(self, event=None):
+        if self.tipwindow or not self.text:
+            return
+        x, y, _, cy = self.widget.bbox("insert")
+        x = x + self.widget.winfo_rootx() + 25
+        y = y + cy + self.widget.winfo_rooty() + 10
+        self.tipwindow = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        label = tk.Label(tw, text=self.text, justify='left',
+                         background="#ffffe0", relief='solid', borderwidth=1,
+                         font=("tahoma", "8", "normal"))
+        label.pack(ipadx=1)
+
+    def hide_tip(self, event=None):
+        tw = self.tipwindow
+        self.tipwindow = None
+        if tw:
+            tw.destroy()
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = PowerBIRegressionTesterApp(root)
     root.mainloop()
+
+

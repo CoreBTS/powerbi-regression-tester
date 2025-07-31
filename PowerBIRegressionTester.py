@@ -10,7 +10,6 @@ import pandas as pd
 import importlib.util
 from enum import Enum
 import clr
-import re
 class PowerBIRegressionTester:
     """
     A class to perform regression testing on Power BI DAX queries by comparing query results
@@ -18,7 +17,6 @@ class PowerBIRegressionTester:
     and comparison, as well as mapping visuals to their page names.
     """
 
-    _tenant_id = None  # Class variable for TenantID
     PROJECT_FOLDER_BASE = "Projects"
     QUERIES_BASE_FOLDER = "Query Files"
     BASELINE_FOLDER_NAME = "baseline"
@@ -32,7 +30,7 @@ class PowerBIRegressionTester:
         DAX_STUDIO = "DAXSTUDIO"
         PERFORMANCE_ANALYZER = "PERFORMANCEANALYZER"
 
-    def __init__(self, project_folder, pbi_report_folder, datasource, database, user_id, password, interactive=False, xmla_endpoint=False, local_instance=False):
+    def __init__(self, project_folder, pbi_report_folder, datasource, database, user_id, password, tenant_id, interactive=False, xmla_endpoint=False, local_instance=False):
 
 
     #def __init__(self, project_folder, connection_string, pbi_report_folder):
@@ -57,6 +55,7 @@ class PowerBIRegressionTester:
         self.database = database if database is not None else ""
         self.user_id = user_id if user_id is not None else ""
         self.password = password if password is not None else ""
+        self.tenant_id = tenant_id if tenant_id is not None else ""
         self.interactive = interactive
         self.xmla_endpoint = xmla_endpoint
         self.local_instance = local_instance
@@ -112,35 +111,18 @@ class PowerBIRegressionTester:
             if not self.xmla_endpoint:
                 raise ValueError("Either 'Local Instance', 'Interactive' or 'XMLA Endpoint' must be True to build a valid connection string.")
 
+            xmla_user_id = f"app:{self.user_id}@{self.tenant_id}"
             self._connection_string_value = (
                 f"Provider=MSOLAP;Data Source={self.datasource};"
                 f"Initial Catalog={self.database};"
-                f"User ID={self.user_id};Password={self.password}"
+                f"User ID={xmla_user_id};Password={self.password}"
             )
 
     def _build_interaction_connection_string(self):
-        # Your Azure AD App Registration details
-        # CLIENT_ID = '54640219-af44-42bb-adcd-d3722aa55e04'  # Application (client) ID
-
         # 7f67af8a-fedc-4b08-8b4e-37c4d127b6cf is a well known client ID for Power BI (used by Bravo as well)
         # https://learn.microsoft.com/en-us/power-bi/developer/visuals/entra-id-authentication?utm_source=chatgpt.com
         CLIENT_ID = '7f67af8a-fedc-4b08-8b4e-37c4d127b6cf'
-
-        # TENANT_ID = 'e39cce29-5716-43ba-b27d-1bdd8fd67901'  # Or your tenant ID
-
-
-        if PowerBIRegressionTester._tenant_id is None:
-            raise ValueError("Tenant ID (_tenant_id) must be set before building the interactive connection string.")
-        guid_regex = re.compile(
-            r'^[{(]?[0-9a-fA-F]{8}-'
-            r'[0-9a-fA-F]{4}-'
-            r'[0-9a-fA-F]{4}-'
-            r'[0-9a-fA-F]{4}-'
-            r'[0-9a-fA-F]{12}[)}]?$'
-        )
-        if not isinstance(PowerBIRegressionTester._tenant_id, str) or not guid_regex.match(PowerBIRegressionTester._tenant_id):
-            raise ValueError(f"Tenant ID '{PowerBIRegressionTester._tenant_id}' is not a valid GUID.")
-        AUTHORITY = f"https://login.microsoftonline.com/{PowerBIRegressionTester._tenant_id}"
+        AUTHORITY = f"https://login.microsoftonline.com/{self.tenant_id}"
         SCOPES = ["https://analysis.windows.net/powerbi/api/.default"]
         API_BASE = f"https://api.powerbi.com/v1.0/myorg"
 
@@ -215,15 +197,6 @@ class PowerBIRegressionTester:
             
         return self._connection_string_value
 
-
-    @classmethod
-    def get_tenant_id(cls):
-        return cls._tenant_id
-
-    @classmethod
-    def set_tenant_id(cls, value):
-        cls._tenant_id = value
-
     @classmethod
     def for_compare_only(cls, project_folder):
         """
@@ -247,16 +220,6 @@ class PowerBIRegressionTester:
         obj.baseline_parquet_file = os.path.join(obj.baseline_folder, cls.BASELINE_PARQUET_FILE)
         obj.instance_folder_base = os.path.join(obj.project_folder, cls.INSTANCE_FOLDER_NAME)
         obj._connection_string_value = None  # Not needed for compare-only
-
-        # obj.query_type = query_type
-
-        # obj.query_subfolder = None
-        # if obj.query_type == obj.QueryType.DAX_STUDIO:
-        #     obj.query_subfolder = "DAX Studio"
-        # elif obj.query_type == obj.QueryType.PERFORMANCE_ANALYZER:
-        #     obj.query_subfolder = "PBI Performance Analyzer"
-
-        # obj.query_folder = os.path.join(obj.project_folder, obj.QUERIES_BASE_FOLDER, obj.query_subfolder)
         obj.dax_studio_query_folder = os.path.join(obj.project_folder, obj.QUERIES_BASE_FOLDER, obj.DAX_STUDIO_QUERY_FOLDER_NAME)
         obj.power_bi_perf_analyzer_query_folder = os.path.join(obj.project_folder, obj.QUERIES_BASE_FOLDER, obj.POWER_BI_PERF_ANALYZER_QUERY_FOLDER_NAME)
 
@@ -309,30 +272,12 @@ class PowerBIRegressionTester:
         return None
 
     def _flatten_event(self, event):
-        """
-        Flatten the 'metrics' dictionary into the top-level event dictionary.
-
-        Args:
-            event (dict): The event dictionary.
-
-        Returns:
-            dict: The flattened event dictionary.
-        """
         flat = event.copy()
         metrics = flat.pop("metrics", {})
         flat.update(metrics)
         return flat
 
     def _row_hash(self, row):
-        """
-        Generate a SHA-256 hash for a DataFrame row by concatenating its values.
-
-        Args:
-            row (pd.Series): The row to hash.
-
-        Returns:
-            str: The SHA-256 hash string.
-        """
         row_str = '|'.join(str(val) for val in row.values)
         return hashlib.sha256(row_str.encode('utf-8')).hexdigest()
 
@@ -546,18 +491,7 @@ class PowerBIRegressionTester:
                 filtered_df = filtered_df.rename(columns={"id": "ID", "QueryText": "Query"})
 
         if filtered_df is not None and not filtered_df.empty:
-            filtered_df.drop_duplicates(inplace=True)
-
-            # Rename columns and select only the relevant ones for clarity
-            # filtered_df = filtered_df.rename(columns={"RequestID": "ID"})
-            # filtered_df = filtered_df.drop(columns=[
-            #     'Duration', 'StartTime', 'EndTime', 'Username', 'DatabaseName', 'QueryType',
-            #     'AggregationMatchCount', 'AggregationMissCount', 'RequestProperties',
-            #     'RequestParameters', 'ActivityID'
-            # ])
-            # filtered_df = filtered_df[['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']]
-
-            
+            filtered_df.drop_duplicates(inplace=True)           
             desired_columns = ['ID', 'Query', 'PageName', 'VisualID', 'ResultSets', 'RowCount']
             filtered_df = filtered_df[desired_columns]
 
@@ -778,15 +712,16 @@ class PowerBIRegressionTester:
             instance_two_df = instance_two_df[~instance_two_df['Query ID'].isin(ignore_list)]
 
         comparison_df = instance_one_df.merge(
-            instance_two_df, on='Query ID', suffixes=('_baseline', ''), how='outer', indicator=True
+            instance_two_df, on='Query ID', suffixes=(' Baseline', ''), how='outer', indicator=True
         )
+        comparison_df.rename(columns={'_merge': 'Merge'}, inplace=True)
 
-        diff_mask = (comparison_df['_merge'] == 'both') & (
+        diff_mask = (comparison_df['Merge'] == 'both') & (
             (
-                (comparison_df['Query Hash'].notna() & comparison_df['Query Hash_baseline'].notna() &
-                 (comparison_df['Query Hash'] != comparison_df['Query Hash_baseline']))
+                (comparison_df['Query Hash'].notna() & comparison_df['Query Hash Baseline'].notna() &
+                 (comparison_df['Query Hash'] != comparison_df['Query Hash Baseline']))
                 |
-                (comparison_df['Query Hash'].isna() ^ comparison_df['Query Hash_baseline'].isna())
+                (comparison_df['Query Hash'].isna() ^ comparison_df['Query Hash Baseline'].isna())
             )
         )
         # Add a column 'IsDifferent' that is True where diff_mask is True, else False
@@ -797,16 +732,16 @@ class PowerBIRegressionTester:
         value_diffs['Create Date'] = now_str
 
         column_map = {
-            'ID': 'Query ID',
+            'Query ID': 'Query ID',
             'Query': 'Query',
-            'PageName': 'Page Name',
-            'VisualID': 'Visual ID',
-            'ResultSets': 'Result Sets',
-            'RowCount': 'RowCount Instance',
-            'RowCount_baseline': 'RowCount Baseline',
-            '_merge': 'Merge',
+            'Page Name': 'Page Name',
+            'Visual ID': 'Visual ID',
+            'Result Sets': 'Result Sets',
+            'RowCount Instance': 'RowCount Instance',
+            'RowCount Instance Baseline': 'RowCount Instance Baseline',
+            'Merge': 'Merge',
             'Query Hash': 'Query Hash',
-            'Query Hash_baseline': 'Query Hash Baseline',
+            'Query Hash Baseline': 'Query Hash Baseline',
             'Hash Match': 'Hash Match',
             'Create Date': 'Create Date'
         }
