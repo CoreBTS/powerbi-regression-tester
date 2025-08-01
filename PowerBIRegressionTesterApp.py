@@ -112,44 +112,52 @@ class PowerBIRegressionTesterApp:
         project_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
         project_frame.columnconfigure(1, weight=1)
 
-        ttk.Label(project_frame, text="Project:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
+        # Move Project label and dropdown to the left side
+        ttk.Label(project_frame, text="Project:").grid(row=0, column=0, sticky="w", padx=5, pady=5)  # changed sticky to "w"
         self.project_folder_dropdown = ttk.Combobox(project_frame, textvariable=self.project_folder_var, width=40, state="readonly")
-        self.project_folder_dropdown.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
+        self.project_folder_dropdown.grid(row=0, column=1, sticky="w", padx=5, pady=5)  # changed sticky to "w"
         self.project_folder_dropdown.bind("<<ComboboxSelected>>", self.on_project_folder_select)
         ttk.Button(project_frame, text="New", command=self.create_new_config).grid(row=0, column=2, padx=2, sticky='w')
         ttk.Button(project_frame, text="Save", command=self.save_current_config).grid(row=0, column=3, padx=2, sticky='w')
         ttk.Button(project_frame, text="Delete", command=self.delete_current_config).grid(row=0, column=4, padx=2, sticky='w')
 
         # --- PBI Report Folder ---
-        ttk.Label(project_frame, text="PBI Report Folder (optional):").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+        ttk.Label(project_frame, text="PBI Report Folder:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
         entry = ttk.Entry(project_frame, textvariable=self.pbi_report_folder_var, width=60)
         entry.grid(row=1, column=1, padx=5, pady=2, sticky="ew")
         ttk.Button(project_frame, text="Browse", command=lambda v=self.pbi_report_folder_var: self.browse_folder(v)).grid(row=1, column=2, sticky='w')
 
+        # --- Baseline Frame ---
+        baseline_frame = ttk.LabelFrame(self.root, text="Baseline")
+        baseline_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        # Remove columnconfigure for baseline_frame
+
+        ttk.Button(baseline_frame, text="Create Baseline", command=self.run_baseline).grid(row=0, column=0, padx=(5, 2), pady=5, sticky='w')
+        ttk.Button(baseline_frame, text="Edit Baseline", command=self.edit_baseline).grid(row=0, column=1, padx=(2, 2), pady=5, sticky='w')
+        ttk.Button(baseline_frame, text="View Baseline", command=self.view_baseline).grid(row=0, column=2, padx=(2, 5), pady=5, sticky='w')
+
         # --- Instance Selection Frame ---
         instance_frame = ttk.LabelFrame(self.root, text="Instance")
-        instance_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        instance_frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
         instance_frame.columnconfigure(1, weight=1)
+        # instance_frame.columnconfigure(5, weight=1)  # Make column 5 expand
 
         ttk.Label(instance_frame, text="Instance:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
         self.instance_dropdown = ttk.Combobox(instance_frame, textvariable=self.instance_name_var, width=40, state="readonly")
         self.instance_dropdown.grid(row=0, column=1, padx=5, pady=2, sticky="ew")
         ttk.Button(instance_frame, text="Create", command=self.create_instance).grid(row=0, column=2, padx=2, sticky='w')
         ttk.Button(instance_frame, text="Edit", command=self.edit_selected_instance).grid(row=0, column=3, padx=2, sticky='w')
-        ttk.Button(instance_frame, text="Delete", command=self.delete_current_instance).grid(row=0, column=4, padx=2, sticky='w')
-        ttk.Button(instance_frame, text="View", command=self.view_instance).grid(row=0, column=5, padx=2, sticky='w')
+        ttk.Button(instance_frame, text="View", command=self.view_instance).grid(row=0, column=4, padx=2, sticky='w')
+        ttk.Button(instance_frame, text="Delete", command=self.delete_current_instance).grid(row=0, column=5, padx=2, sticky='w')
+        ttk.Button(instance_frame, text="Update", command=self.run_selected_instance).grid(row=0, column=6, padx=2, sticky='w')
 
         # --- Action Buttons Frame ---
         action_frame = ttk.LabelFrame(self.root, text="Actions")
-        action_frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
-        action_frame.columnconfigure(0, weight=1)
+        action_frame.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
+        # Remove columnconfigure for action_frame
 
-        ttk.Button(action_frame, text="Create Baseline", command=self.run_baseline).grid(row=0, column=0, padx=5, pady=5, sticky='w')
-        ttk.Button(action_frame, text="Edit Baseline", command=self.edit_baseline).grid(row=0, column=1, padx=5, pady=5, sticky='w')
-        ttk.Button(action_frame, text="View Baseline", command=self.view_baseline).grid(row=0, column=2, padx=5, pady=5, sticky='w')
-        ttk.Button(action_frame, text="Compare", command=self.run_compare).grid(row=0, column=3, padx=5, pady=5, sticky='w')
-        ttk.Button(action_frame, text="Compare Instance To", command=self.compare_to_dialog).grid(row=0, column=4, padx=5, pady=5, sticky='w')
-        ttk.Button(action_frame, text="Update Selected Instance", command=self.run_selected_instance).grid(row=0, column=5, padx=5, pady=5, sticky='w')
+        ttk.Button(action_frame, text="Compare", command=self.run_compare).grid(row=0, column=0, padx=(5, 2), pady=5, sticky='w')
+        ttk.Button(action_frame, text="Compare Instance To", command=self.compare_to_dialog).grid(row=0, column=1, padx=(2, 2), pady=5, sticky='w')
 
         # --- Status Bar ---
         # self.status_var = tk.StringVar()
