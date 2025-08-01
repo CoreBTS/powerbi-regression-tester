@@ -108,8 +108,8 @@ class PowerBIRegressionTesterApp:
             widget.destroy()
 
         # --- Project Selection Frame ---
-        project_frame = ttk.LabelFrame(self.root, text="Project")
-        project_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+        project_frame = ttk.LabelFrame(self.root, text="Project", padding=10, relief="solid", borderwidth=3)
+        project_frame.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="ew")
         project_frame.columnconfigure(1, weight=1)
 
         # Move Project label and dropdown to the left side
@@ -128,8 +128,8 @@ class PowerBIRegressionTesterApp:
         ttk.Button(project_frame, text="Browse", command=lambda v=self.pbi_report_folder_var: self.browse_folder(v)).grid(row=1, column=2, sticky='w')
 
         # --- Baseline Frame ---
-        baseline_frame = ttk.LabelFrame(self.root, text="Baseline")
-        baseline_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        baseline_frame = ttk.LabelFrame(self.root, text="Baseline", padding=10, relief="ridge", borderwidth=3)
+        baseline_frame.grid(row=1, column=0, padx=10, pady=(5, 5), sticky="ew")
         # Remove columnconfigure for baseline_frame
 
         ttk.Button(baseline_frame, text="Create Baseline", command=self.run_baseline).grid(row=0, column=0, padx=(5, 2), pady=5, sticky='w')
@@ -137,8 +137,8 @@ class PowerBIRegressionTesterApp:
         ttk.Button(baseline_frame, text="View Baseline", command=self.view_baseline).grid(row=0, column=2, padx=(2, 5), pady=5, sticky='w')
 
         # --- Instance Selection Frame ---
-        instance_frame = ttk.LabelFrame(self.root, text="Instance")
-        instance_frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
+        instance_frame = ttk.LabelFrame(self.root, text="Instance", padding=10, relief="ridge", borderwidth=3)
+        instance_frame.grid(row=2, column=0, padx=10, pady=(5, 5), sticky="ew")
         instance_frame.columnconfigure(1, weight=1)
         # instance_frame.columnconfigure(5, weight=1)  # Make column 5 expand
 
@@ -152,8 +152,8 @@ class PowerBIRegressionTesterApp:
         ttk.Button(instance_frame, text="Update", command=self.run_selected_instance).grid(row=0, column=6, padx=2, sticky='w')
 
         # --- Action Buttons Frame ---
-        action_frame = ttk.LabelFrame(self.root, text="Actions")
-        action_frame.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
+        action_frame = ttk.LabelFrame(self.root, text="Actions", padding=10, relief="ridge", borderwidth=3)
+        action_frame.grid(row=3, column=0, padx=10, pady=(5, 10), sticky="ew")
         # Remove columnconfigure for action_frame
 
         ttk.Button(action_frame, text="Compare", command=self.run_compare).grid(row=0, column=0, padx=(5, 2), pady=5, sticky='w')
@@ -240,25 +240,68 @@ class PowerBIRegressionTesterApp:
             self.project_folder_dropdown.set("")
 
     def create_new_config(self):
-        new_name = simpledialog.askstring("New Project", "Enter a name for the new project:")
-        if not new_name:
-            return
-        if self.get_project(new_name):
-            messagebox.showerror("Error", f"Project '{new_name}' already exists.")
-            return
-        pbi_report_folder = simpledialog.askstring("PBI Report Folder", "Enter PBI Report Folder (optional):") or ""
-        self.configs.setdefault("projects", []).append({
-            "name": new_name,
-            "pbi_report_folder": pbi_report_folder,
-            "instances": []
-        })
-        self.save_all_configs()
-        self.update_project_folder_dropdown()
-        self.project_folder_dropdown.set(new_name)
-        self.pbi_report_folder_var.set(pbi_report_folder)
-        self.update_instance_dropdown()
+        dialog = tk.Toplevel(self.root)
+        dialog.title("New Project")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        dialog.resizable(False, False)
+        dialog.geometry("420x160")
 
-        PowerBIRegressionTester.create_project_skeleton(new_name)
+        tk.Label(dialog, text="Project Name:").grid(row=0, column=0, sticky="e", padx=10, pady=(15, 5))
+        project_name_var = tk.StringVar()
+        entry_name = tk.Entry(dialog, textvariable=project_name_var, width=32)
+        entry_name.grid(row=0, column=1, padx=5, pady=(15, 5), sticky="w")
+        entry_name.focus_set()
+
+        tk.Label(dialog, text="PBI Report Folder:").grid(row=1, column=0, sticky="e", padx=10, pady=5)
+        pbi_folder_var = tk.StringVar()
+        entry_folder = tk.Entry(dialog, textvariable=pbi_folder_var, width=32)
+        entry_folder.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+
+        def browse():
+            folder = filedialog.askdirectory(parent=dialog)
+            if folder:
+                pbi_folder_var.set(folder)
+        tk.Button(dialog, text="Browse", command=browse).grid(row=1, column=2, padx=5, pady=5)
+
+        btn_frame = tk.Frame(dialog)
+        btn_frame.grid(row=2, column=0, columnspan=3, pady=15)
+        result = {}
+
+        def on_ok():
+            name = project_name_var.get().strip()
+            folder = pbi_folder_var.get().strip()
+            if not name:
+                messagebox.showerror("Error", "Project name is required.", parent=dialog)
+                return
+            if self.get_project(name):
+                messagebox.showerror("Error", f"Project '{name}' already exists.", parent=dialog)
+                return
+            result["name"] = name
+            result["folder"] = folder
+            dialog.destroy()
+
+        def on_cancel():
+            dialog.destroy()
+
+        tk.Button(btn_frame, text="OK", width=10, command=on_ok).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Cancel", width=10, command=on_cancel).pack(side="left", padx=5)
+
+        dialog.wait_window()
+
+        if "name" in result:
+            self.configs.setdefault("projects", []).append({
+                "name": result["name"],
+                "pbi_report_folder": result["folder"],
+                "instances": []
+            })
+            self.save_all_configs()
+            self.update_project_folder_dropdown()
+            self.project_folder_dropdown.set(result["name"])
+            self.pbi_report_folder_var.set(result["folder"])
+            self.update_instance_dropdown()
+            from PowerBIRegressionTester import PowerBIRegressionTester
+            PowerBIRegressionTester.create_project_skeleton(result["name"])
 
     def load_config_to_fields(self, project_name):
         project = self.get_project(project_name)
@@ -370,12 +413,12 @@ class PowerBIRegressionTesterApp:
             # --- End: Custom dialog with checkbox ---
 
     def prompt_instance_details(self, instance=None):
-        instance = instance or {}
         dialog = tk.Toplevel(self.root)
         dialog.title(f"{instance.get('instance_name', 'Baseline')} Details")
-        dialog.grab_set()
+        dialog.transient(self.root)  # Make modal and always on top of parent
+        dialog.grab_set()            # Prevent interaction with other windows
         dialog.resizable(False, False)
-        dialog.geometry("470x360")  # Wider window
+        dialog.geometry("470x360") 
 
         # --- Menu Bar ---
         menu_bar = tk.Menu(dialog)
