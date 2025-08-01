@@ -4,6 +4,9 @@
 token_cache.bin
 
 Projects/
+venv/
+venv2/
+venv3/
 
 Sales & Returns Sample/baseline
 Sales & Returns Sample/instance

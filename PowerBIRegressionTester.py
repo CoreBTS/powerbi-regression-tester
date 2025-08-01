@@ -10,6 +10,8 @@ import pandas as pd
 import importlib.util
 from enum import Enum
 import clr
+from SetupPyadomd import PyadomdSetup
+
 class PowerBIRegressionTester:
     """
     A class to perform regression testing on Power BI DAX queries by comparing query results
@@ -88,15 +90,18 @@ class PowerBIRegressionTester:
 
         self._connection_string_value = None
 
-        adomd_path = r'C:\Program Files\Microsoft.NET\ADOMD.NET\160'
+        setupper = PyadomdSetup()
+        setupper.setup()
 
-        if not os.path.isdir(adomd_path):
-            print("Folder does not exist.")
-            sys.exit(1)
+        # adomd_path = r'C:\Program Files\Microsoft.NET\ADOMD.NET\160'
 
-        # Check if the ADOMD.NET path is already in the system path
-        if adomd_path not in path:
-            path.append(adomd_path)
+        # if not os.path.isdir(adomd_path):
+        #     print("Folder does not exist.")
+        #     sys.exit(1)
+
+        # # Check if the ADOMD.NET path is already in the system path
+        # if adomd_path not in path:
+        #     path.append(adomd_path)
 
     def build_connection_string(self):
         # If datasource is empty which signifies an interactive connection, build the connection string
