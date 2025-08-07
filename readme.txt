@@ -11,3 +11,6 @@ pip install -r requirements.txt
 
 Deactivate the virtual environment using:
 deactivate
+
+
+To start the app, open the PowerBIRegressionTesterApp.py file and run

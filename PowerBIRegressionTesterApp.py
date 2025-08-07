@@ -413,6 +413,7 @@ class PowerBIRegressionTesterApp:
             # --- End: Custom dialog with checkbox ---
 
     def prompt_instance_details(self, instance=None):
+        instance = instance or {}
         dialog = tk.Toplevel(self.root)
         dialog.title(f"{instance.get('instance_name', 'Baseline')} Details")
         dialog.transient(self.root)  # Make modal and always on top of parent
@@ -496,7 +497,7 @@ class PowerBIRegressionTesterApp:
         server_entry.grid(row=1, column=1, sticky="ew", padx=5, pady=4)
         help_btn = tk.Label(details, text="?", foreground="blue", cursor="question_arrow")
         help_btn.grid(row=1, column=2, sticky="w", padx=2)
-        ToolTip(help_btn, "The Power BI server address or XMLA endpoint.")
+        ToolTip(help_btn, "The Power BI server address, XMLA endpoint or local address such as localhost:XXXXX.")
 
         ttk.Label(details, text="Database Name:").grid(row=2, column=0, sticky="e", padx=5, pady=4)
         db_entry = ttk.Entry(details, textvariable=database_name_var, width=entry_width)
