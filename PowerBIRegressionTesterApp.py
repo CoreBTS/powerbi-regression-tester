@@ -165,6 +165,15 @@ class PowerBIRegressionTesterApp:
         ttk.Button(action_frame, text="Compare", command=self.run_compare).grid(row=0, column=0, padx=(5, 2), pady=5, sticky='w')
         ttk.Button(action_frame, text="Compare Instance To", command=self.compare_to_dialog).grid(row=0, column=1, padx=(2, 2), pady=5, sticky='w')
 
+        # --- Main Menu ---
+        menu_bar = tk.Menu(self.root)
+        self.root.config(menu=menu_bar)
+
+        # File menu (add more items as needed)
+        file_menu = tk.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="Clear Interactive Credentials", command=self.clear_interactive_credentials)
+
         # --- Status Bar ---
         # self.status_var = tk.StringVar()
         # status_bar = ttk.Label(self.root, textvariable=self.status_var, relief="sunken", anchor="w")
@@ -1893,6 +1902,13 @@ class PowerBIRegressionTesterApp:
 
         return tester
 
+    def clear_interactive_credentials(self):
+        try:
+            PowerBIRegressionTester.remove_cached_credentials()
+            messagebox.showinfo("Credentials Cleared", "Interactive login credential cache has been cleared.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to clear credentials:\n{e}")
+            
 class ToolTip(object):
     def __init__(self, widget, text):
         self.widget = widget

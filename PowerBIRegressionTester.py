@@ -29,6 +29,7 @@ class PowerBIRegressionTester:
     BASELINE_PARQUET_FILE = "baseline.parquet"
     DAX_STUDIO_QUERY_FOLDER_NAME = "DAX Studio"
     POWER_BI_PERF_ANALYZER_QUERY_FOLDER_NAME = "PBI Performance Analyzer"
+    CACHE_FILE = "token_cache.bin"
 
     class QueryType(Enum):
         DAX_STUDIO = "DAXSTUDIO"
@@ -146,37 +147,44 @@ class PowerBIRegressionTester:
         #     # Pro requires this datasource
         #     datasource = 'pbiazure://api.powerbi.com/'
 
-        CACHE_FILE = "token_cache.bin"
-        force_reauthentication = False  # Set to True to force re-authentication
+        found_credentials = os.path.exists(self.CACHE_FILE)
 
-        # Create persistent cache
         cache = msal.SerializableTokenCache()
-        if os.path.exists(CACHE_FILE):
-            cache.deserialize(open(CACHE_FILE, "r").read())
+        auth_result = None
 
-        app = msal.PublicClientApplication(
-            client_id=CLIENT_ID,
-            # authority="https://login.microsoftonline.com/common",
-            authority=AUTHORITY,
-            token_cache=cache
-        )
+        if found_credentials:
+            cache.deserialize(open(self.CACHE_FILE, "r").read())
 
-        # Attempt to acquire token silently (cached)
-        accounts = app.get_accounts()
-        if accounts and not force_reauthentication:
-            result = app.acquire_token_silent(SCOPES, account=accounts[0])
-        else:
-            result = None
+            app = msal.PublicClientApplication(
+                client_id=CLIENT_ID,
+                # authority="https://login.microsoftonline.com/common",
+                authority=AUTHORITY,
+                token_cache=cache
+            )
+
+            # Attempt to acquire token silently (cached)
+            accounts = app.get_accounts()
+            if accounts:
+                auth_result = app.acquire_token_silent(SCOPES, account=accounts[0])
+            else:
+                auth_result = None
 
         # If silent fails, do interactive login with prompt
-        if not result:
-            result = app.acquire_token_interactive(
+        if not auth_result:
+            app = msal.PublicClientApplication(
+                client_id=CLIENT_ID,
+                # authority="https://login.microsoftonline.com/common",
+                authority=AUTHORITY,
+                token_cache=cache
+            )
+
+            auth_result = app.acquire_token_interactive(
                 scopes=SCOPES,
                 prompt="select_account"  # Always allow user to switch
             )
 
         # Save cache back to file
-        with open(CACHE_FILE, "w") as f:
+        with open(self.CACHE_FILE, "w") as f:
             f.write(cache.serialize())
 
         if not self.xmla_endpoint:
@@ -184,7 +192,7 @@ class PowerBIRegressionTester:
         else:
             datasource = self.datasource
 
-        access_token = result["access_token"]
+        access_token = auth_result["access_token"]
         connection_string = (
         f"Provider=MSOLAP;"
         f"Data Source={datasource};"
@@ -196,6 +204,11 @@ class PowerBIRegressionTester:
         )
 
         return connection_string
+    
+    @staticmethod
+    def remove_cached_credentials():
+        if os.path.exists(PowerBIRegressionTester.CACHE_FILE):
+            os.remove(PowerBIRegressionTester.CACHE_FILE)
     
     @property
     def _connection_string(self):
