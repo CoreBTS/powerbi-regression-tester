@@ -81,7 +81,7 @@ class PyadomdSetup:
         # Optionally, import Pyadomd to verify setup
         try:
             from pyadomd import Pyadomd
-            print("Pyadomd setup complete and import successful.")
+            # print("Pyadomd setup complete and import successful.")
         except ImportError:
             print("Pyadomd import failed after setup.")
             sys.exit(1)

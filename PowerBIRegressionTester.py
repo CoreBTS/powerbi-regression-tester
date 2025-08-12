@@ -11,6 +11,8 @@ import importlib.util
 from enum import Enum
 import clr
 from SetupPyadomd import PyadomdSetup
+from pyadomd import Pyadomd
+
 
 class PowerBIRegressionTester:
     """
@@ -799,6 +801,10 @@ class PowerBIRegressionTester:
 
         combined_df = pd.concat([dax_studio_df, power_bi_perf_analyzer], ignore_index=True)
 
+        # If combined_df is empty, return an empty DataFrame
+        if combined_df.empty:
+            return pd.DataFrame()
+
         if not combined_df.empty and 'Query' in combined_df.columns:
             combined_df['Query'] = combined_df['Query'].apply(self._normalize_line_endings)
         # final_df['QueryHash'] = final_df['Query'].apply(lambda x: hashlib.sha256(str(x).encode('utf-8')).hexdigest())
@@ -873,6 +879,9 @@ class PowerBIRegressionTester:
         #     raise ValueError("Unsupported query type. Use DAX_STUDIO or PERFORMANCE_ANALYZER.")
         
         filtered_df = self._prepare_df()
+        if filtered_df.empty:
+            return pd.DataFrame()
+        
         os.makedirs(self.baseline_folder, exist_ok=True)
         filtered_df.to_csv(self.baseline_csv_file, index=False)
         filtered_df.to_parquet(self.baseline_parquet_file, index=False)
@@ -899,6 +908,9 @@ class PowerBIRegressionTester:
         # instance_df['Query'] = instance_df['Query'].str.replace('\r\n', '\n').str.replace('\r', '\n')
         # # Step 2: Convert to Windows-style CRLF
         # instance_df['Query'] = instance_df['Query'].str.replace('\n', '\r\n')
+
+        if instance_df.empty:
+            return pd.DataFrame()
 
         instance_df.to_csv(instance_csv_file, index=False)
         instance_df.to_parquet(instance_parquet_file, index=False)
@@ -1001,6 +1013,16 @@ class PowerBIRegressionTester:
         for folder in folders:
             os.makedirs(folder, exist_ok=True)
 
+    def test_connection(self):
+        # Test the connection to the Power BI data source using the provided connection string.
+        try:
+            # Attempt to create a connection to the Power BI data source
+            with Pyadomd(self._connection_string) as conn:
+                # If the connection is successful, return True
+                return True
+        except Exception as e:
+            # If an error occurs, return False
+            return False
 
     def run_single_query(self, query):
         """
@@ -1012,7 +1034,7 @@ class PowerBIRegressionTester:
         Returns:
             pd.DataFrame: The result of the executed query.
         """
-        from pyadomd import Pyadomd
+        # from pyadomd import Pyadomd
         with Pyadomd(self._connection_string) as conn:
             with conn.cursor().execute(query) as cur:
                 # columns = [col[0] for col in cur.description]
