@@ -15,8 +15,9 @@ deactivate
 
 To start the app, open the PowerBIRegressionTesterApp.py file and run
 
-
+Copy pyadomd.txt content into pyadomd.py in the venv where pyinstaller will run
 To create the .exe, run pyinstaller PowerBIRegressionTesterApp.py --onefile --windowed
+pyinstaller PowerBIRegressionTesterApp.spec
 
 
 To Do:

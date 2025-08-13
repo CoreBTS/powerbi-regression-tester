@@ -1,42 +1,41 @@
-# PowerBIRegressionTesterApp.spec
-# Builds a single EXE that includes pyadomd and ADOMD.NET DLL.
-
-from PyInstaller.utils.hooks import collect_submodules
+# -*- mode: python ; coding: utf-8 -*-
 import os
-import sys
+import glob
+from PyInstaller.utils.hooks import collect_submodules
 
-# Path to your ADOMD.NET DLL
-ADOMD_DLL_PATH = r"C:\Program Files\Microsoft.NET\ADOMD.NET\160\Microsoft.AnalysisServices.AdomdClient.dll"
-ADOMD_CONFIG_PATH = r"C:\Program Files\Microsoft.NET\ADOMD.NET\160\Microsoft.AnalysisServices.AdomdClient.replacements.config"
+# Paths
+ADOMD_DIR = r"C:\Program Files\Microsoft.NET\ADOMD.NET\160"
 
-# Collect all pyadomd submodules and pythonnet's clr
-hiddenimports = collect_submodules('pyadomd') + ['clr']
+# Collect all pyadomd submodules
+hidden_imports = collect_submodules('pyadomd') + ['clr']
 
-# Bundle the ADOMD.NET DLL and optional config into the EXE
-binaries = [
-    (ADOMD_DLL_PATH, '.'),  # DLL in root of _MEIxxxxx at runtime
+# Collect all ADOMD.NET DLLs
+binaries = [(f, '.') for f in glob.glob(os.path.join(ADOMD_DIR, '*.dll'))]
+
+runtime_hooks=[
+    r"runtime_load_adomd_dll.py",
+    r"verify_pyadomd_hook.py"
 ]
-if os.path.exists(ADOMD_CONFIG_PATH):
-    binaries.append((ADOMD_CONFIG_PATH, '.'))
 
+# Analysis
 a = Analysis(
-    ['PowerBIRegressionTesterApp.py'],  # your script
+    ['PowerBIRegressionTesterApp.py'],
     pathex=[],
     binaries=binaries,
     datas=[],
-    hiddenimports=hiddenimports,
+    hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=['runtime_load_adomd_dll.py'],  # custom hook below
+    runtime_hooks=runtime_hooks,
     excludes=[],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=None,
-    noarchive=False
+    noarchive=False,
+    optimize=0,
 )
 
+# Compile Python code
 pyz = PYZ(a.pure, a.zipped_data, cipher=None)
 
+# Executable
 exe = EXE(
     pyz,
     a.scripts,
@@ -47,10 +46,12 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,  # same as --windowed
-    disable_windowed_traceback=False
+    upx_exclude=[],
+    console=True,  # console enabled
+    disable_windowed_traceback=False,
 )
 
+# COLLECT: gather everything into a single folder
 coll = COLLECT(
     exe,
     a.binaries,
@@ -59,5 +60,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='PowerBIRegressionTesterApp'
+    name='PowerBIRegressionTesterApp',
 )

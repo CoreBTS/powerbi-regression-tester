@@ -96,7 +96,7 @@ class PowerBIRegressionTester:
         self._connection_string_value = None
 
         setupper = PyadomdSetup()
-        setupper.setup()
+        # setupper.setup()
 
         # adomd_path = r'C:\Program Files\Microsoft.NET\ADOMD.NET\160'
 
