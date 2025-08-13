@@ -7,6 +7,9 @@ import base64
 import sys
 import pandas as pd
 import re
+import traceback
+import datetime
+import threading
 
 if sys.platform == "win32":
     import win32crypt
@@ -1689,7 +1692,7 @@ class PowerBIRegressionTesterApp:
             return
 
         if not instance_name:
-            messagebox.showerror("Error", "No baseline or instance selected.")
+            messagebox.showerror("Error", "No instance selected.")
             return
 
         instance = next((inst for inst in project.get("instances", []) if inst["instance_name"].lower() == instance_name.lower()), None)
@@ -1908,7 +1911,7 @@ class PowerBIRegressionTesterApp:
             messagebox.showinfo("Credentials Cleared", "Interactive login credential cache has been cleared.")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to clear credentials:\n{e}")
-            
+
 class ToolTip(object):
     def __init__(self, widget, text):
         self.widget = widget
@@ -1952,9 +1955,47 @@ class ToolTip(object):
         if tw:
             tw.destroy()
 
+def log_and_show_exception(exc_type, exc_value, exc_traceback):
+    # Ignore KeyboardInterrupt so Ctrl+C works as expected
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    log_dir = os.path.join(os.getcwd(), "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = os.path.join(log_dir, f"error_{timestamp}.log")
+    with open(log_file, "w", encoding="utf-8") as f:
+        f.write(error_msg)
+
+    messagebox.showerror("Unhandled Exception", f"An unexpected error occurred:\n\n{exc_value}\n\nSee log:\n{log_file}")
+
+# ---- Background threads ----
+def thread_exception_handler(args):
+    log_and_show_exception(args.exc_type, args.exc_value, args.exc_traceback)
+
+sys.excepthook = log_and_show_exception
+threading.excepthook = thread_exception_handler
+
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = PowerBIRegressionTesterApp(root)
-    root.mainloop()
+    try:
+        # def tk_callback_exception_handler(exc, val, tb):
+        #     error_msg = "".join(traceback.format_exception(exc, val, tb))
+        #     log_dir = os.path.join(os.getcwd(), "logs")
+        #     os.makedirs(log_dir, exist_ok=True)
+        #     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        #     log_file = os.path.join(log_dir, f"error_{timestamp}.log")
+        #     with open(log_file, "w", encoding="utf-8") as f:
+        #         f.write(error_msg)
+        #     messagebox.showerror("Unhandled Exception", f"An unexpected error occurred:\n\n{val}\n\nSee log:\n{log_file}")
 
-
+        root = tk.Tk()
+        root.report_callback_exception = log_and_show_exception
+        app = PowerBIRegressionTesterApp(root)
+        root.mainloop()
+    except Exception as e:
+        # This will catch exceptions in the main thread
+        error_msg = traceback.format_exc()
+        print(error_msg)
+        messagebox.showerror("Fatal Error", f"An unexpected error occurred:\n\n{e}")

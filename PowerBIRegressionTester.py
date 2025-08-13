@@ -13,6 +13,8 @@ import clr
 from SetupPyadomd import PyadomdSetup
 from pyadomd import Pyadomd
 
+if sys.platform == "win32":
+    import win32crypt
 
 class PowerBIRegressionTester:
     """
@@ -147,45 +149,55 @@ class PowerBIRegressionTester:
         #     # Pro requires this datasource
         #     datasource = 'pbiazure://api.powerbi.com/'
 
-        found_credentials = os.path.exists(self.CACHE_FILE)
-
         cache = msal.SerializableTokenCache()
         auth_result = None
 
-        if found_credentials:
-            cache.deserialize(open(self.CACHE_FILE, "r").read())
+        cache = self.load_cache()
+        app = msal.PublicClientApplication(client_id=CLIENT_ID, authority=AUTHORITY, token_cache=cache)
 
-            app = msal.PublicClientApplication(
-                client_id=CLIENT_ID,
-                # authority="https://login.microsoftonline.com/common",
-                authority=AUTHORITY,
-                token_cache=cache
-            )
+        accounts = app.get_accounts()
+        if accounts:
+            auth_result = app.acquire_token_silent(SCOPES, account=accounts[0])
 
-            # Attempt to acquire token silently (cached)
-            accounts = app.get_accounts()
-            if accounts:
-                auth_result = app.acquire_token_silent(SCOPES, account=accounts[0])
-            else:
-                auth_result = None
-
-        # If silent fails, do interactive login with prompt
         if not auth_result:
-            app = msal.PublicClientApplication(
-                client_id=CLIENT_ID,
-                # authority="https://login.microsoftonline.com/common",
-                authority=AUTHORITY,
-                token_cache=cache
-            )
+            auth_result = app.acquire_token_interactive(scopes=SCOPES, prompt="select_account")
 
-            auth_result = app.acquire_token_interactive(
-                scopes=SCOPES,
-                prompt="select_account"  # Always allow user to switch
-            )
+        self.save_cache(cache)
 
-        # Save cache back to file
-        with open(self.CACHE_FILE, "w") as f:
-            f.write(cache.serialize())
+        # if found_credentials:
+        #     cache.deserialize(open(self.CACHE_FILE, "r").read())
+
+        #     app = msal.PublicClientApplication(
+        #         client_id=CLIENT_ID,
+        #         # authority="https://login.microsoftonline.com/common",
+        #         authority=AUTHORITY,
+        #         token_cache=cache
+        #     )
+
+        #     # Attempt to acquire token silently (cached)
+        #     accounts = app.get_accounts()
+        #     if accounts:
+        #         auth_result = app.acquire_token_silent(SCOPES, account=accounts[0])
+        #     else:
+        #         auth_result = None
+
+        # # If silent fails, do interactive login with prompt
+        # if not auth_result:
+        #     app = msal.PublicClientApplication(
+        #         client_id=CLIENT_ID,
+        #         # authority="https://login.microsoftonline.com/common",
+        #         authority=AUTHORITY,
+        #         token_cache=cache
+        #     )
+
+        #     auth_result = app.acquire_token_interactive(
+        #         scopes=SCOPES,
+        #         prompt="select_account"  # Always allow user to switch
+        #     )
+
+        # # Save cache back to file
+        # with open(self.CACHE_FILE, "w") as f:
+        #     f.write(cache.serialize())
 
         if not self.xmla_endpoint:
             datasource = 'pbiazure://api.powerbi.com/'
@@ -205,6 +217,36 @@ class PowerBIRegressionTester:
 
         return connection_string
     
+    def encrypt_data(self, data: str) -> bytes:
+        """Encrypt string data for the current Windows user."""
+        return win32crypt.CryptProtectData(
+            data.encode("utf-8"), None, None, None, None, 0
+        )
+
+    def decrypt_data(self, data: bytes) -> str:
+        """Decrypt data for the current Windows user."""
+        return win32crypt.CryptUnprotectData(
+            data, None, None, None, 0
+        )[1].decode("utf-8")
+
+    def load_cache(self) -> msal.SerializableTokenCache:
+        cache = msal.SerializableTokenCache()
+        if os.path.exists(self.CACHE_FILE):
+            with open(self.CACHE_FILE, "rb") as f:
+                encrypted_data = f.read()
+            try:
+                decrypted_data = self.decrypt_data(encrypted_data)
+                cache.deserialize(decrypted_data)
+            except Exception as e:
+                print(f"⚠ Failed to decrypt cache: {e}")
+        return cache
+
+    def save_cache(self, cache: msal.SerializableTokenCache):
+        if cache.has_state_changed:
+            encrypted_data = self.encrypt_data(cache.serialize())
+            with open(self.CACHE_FILE, "wb") as f:
+                f.write(encrypted_data)
+
     @staticmethod
     def remove_cached_credentials():
         if os.path.exists(PowerBIRegressionTester.CACHE_FILE):
@@ -581,7 +623,7 @@ class PowerBIRegressionTester:
     #     return filtered_df
 
 
-    def execute_queries2(self, filtered_df):
+    def execute_queries(self, filtered_df):
         """
         Execute DAX queries from the DataFrame, hash the results, and store hashes in the DataFrame.
 
@@ -822,7 +864,7 @@ class PowerBIRegressionTester:
             combined_df['Query'] = combined_df['Query'].apply(self._normalize_line_endings)
         # final_df['QueryHash'] = final_df['Query'].apply(lambda x: hashlib.sha256(str(x).encode('utf-8')).hexdigest())
 
-        combined_df = self.execute_queries2(combined_df)
+        combined_df = self.execute_queries(combined_df)
         all_hashes = sorted(combined_df['Query Hash'].dropna().astype(str).tolist())
         combined = '|'.join(all_hashes)
         final_overall_hash = hashlib.sha256(combined.encode('utf-8')).hexdigest()

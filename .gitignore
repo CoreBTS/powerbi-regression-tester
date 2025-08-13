@@ -3,10 +3,17 @@
 
 token_cache.bin
 
+PowerBIRegressionTesterApp.exe
+
 Projects/
+logs/
+build/
+dist/
+
 venv/
 venv2/
 venv3/
+
 
 Sales & Returns Sample/baseline
 Sales & Returns Sample/instance

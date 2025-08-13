@@ -16,11 +16,10 @@ deactivate
 To start the app, open the PowerBIRegressionTesterApp.py file and run
 
 
+To create the .exe, run pyinstaller PowerBIRegressionTesterApp.py --onefile --windowed
+
 
 To Do:
-When creating a project, allow the user to browse for files containing execute_queries2
-Don't allow the users to run a Baseline or instance without query files
 Exception Handling
 py_installer
 More tooltips
-Reset Interactive Login Credentials Menu Button on the main screen

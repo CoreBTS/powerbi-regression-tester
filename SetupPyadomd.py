@@ -34,15 +34,15 @@ class PyadomdSetup:
         # This is a one-time setup, and the custom.pth file will persist across sessions.
         # If this is not working, you can manually copy the custom.pth file to your site-packages directory folder
         working_directory = os.getcwd()
-        src_file = os.path.join(working_directory, "custom.pth")  # Path to your source file in the subfolder
-        dst_sitepackage = next((p for p in site.getsitepackages() if "site-packages" in p.lower()), None)
-        if not dst_sitepackage:
-            print("site-packages directory not found.")
-            sys.exit(1)
+        # src_file = os.path.join(working_directory, "custom.pth")  # Path to your source file in the subfolder
+        # dst_sitepackage = next((p for p in site.getsitepackages() if "site-packages" in p.lower()), None)
+        # if not dst_sitepackage:
+        #     print("site-packages directory not found.")
+        #     sys.exit(1)
 
-        dst_file = os.path.join(dst_sitepackage, "custom.pth")
-        if not os.path.exists(dst_file) or not filecmp.cmp(src_file, dst_file, shallow=False):
-            shutil.copy(src_file, dst_file)
+        # dst_file = os.path.join(dst_sitepackage, "custom.pth")
+        # if not os.path.exists(dst_file) or not filecmp.cmp(src_file, dst_file, shallow=False):
+        #     shutil.copy(src_file, dst_file)
 
 
         # The custom.pth is the ideal way to add the ADOMD.NET path to the Python environment, 
