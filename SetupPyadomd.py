@@ -67,6 +67,7 @@ class PyadomdSetup:
         # If it is not installed, print an error message and exit, use pip install pyadomd to install it
         # A common folder that it is installed in is C:\Users\username\AppData\Local\Programs\Python\Python311\Lib\site-packages\pyadomd
         # The file pyadomd.txt should be copied to the same folder as pyadomd.py as it includes additional functionality
+        # This is not needed when packaged as the copy should be done before packaging
         spec = importlib.util.find_spec("pyadomd")
         if spec and spec.origin and len(spec.submodule_search_locations) > 0:
             pyadomd_folder = spec.submodule_search_locations[0]

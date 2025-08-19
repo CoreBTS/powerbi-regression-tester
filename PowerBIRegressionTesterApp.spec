@@ -13,8 +13,7 @@ hidden_imports = collect_submodules('pyadomd') + ['clr']
 binaries = [(f, '.') for f in glob.glob(os.path.join(ADOMD_DIR, '*.dll'))]
 
 runtime_hooks=[
-    r"runtime_load_adomd_dll.py",
-    r"verify_pyadomd_hook.py"
+    r"runtime_load_adomd_dll.py"
 ]
 
 # Analysis
@@ -23,10 +22,10 @@ a = Analysis(
     pathex=[],
     binaries=binaries,
     datas=[],
-    hiddenimports=hidden_imports,
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=runtime_hooks,
+    runtime_hooks=[],
     excludes=[],
     noarchive=False,
     optimize=0,
@@ -48,6 +47,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     console=True,  # console enabled
+    onefile=True,
     disable_windowed_traceback=False,
 )
 

@@ -95,8 +95,8 @@ class PowerBIRegressionTester:
 
         self._connection_string_value = None
 
-        setupper = PyadomdSetup()
-        # setupper.setup()
+        # setup = PyadomdSetup()
+        # setup.setup()
 
         # adomd_path = r'C:\Program Files\Microsoft.NET\ADOMD.NET\160'
 
@@ -107,6 +107,9 @@ class PowerBIRegressionTester:
         # # Check if the ADOMD.NET path is already in the system path
         # if adomd_path not in path:
         #     path.append(adomd_path)
+
+        # print(f"Using ADOMD.NET version: {asm.GetName().Version}")
+        # print(f"Using ADOMD.NET version: {asm.GetName().FullName}")
 
     def build_connection_string(self):
         # If datasource is empty which signifies an interactive connection, build the connection string
@@ -1074,10 +1077,10 @@ class PowerBIRegressionTester:
             # Attempt to create a connection to the Power BI data source
             with Pyadomd(self._connection_string) as conn:
                 # If the connection is successful, return True
-                return True
+                return "True"
         except Exception as e:
             # If an error occurs, return False
-            return False
+            return f"Connection Failed {e}"
 
     def run_single_query(self, query):
         """
