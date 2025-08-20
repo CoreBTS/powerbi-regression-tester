@@ -18,16 +18,32 @@ import System  # type: ignore
 from sys import path
 from System.Diagnostics import FileVersionInfo  # type: ignore
 
+import logging
+from datetime import datetime
+
+log_dir = "logs"
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, f"app_{datetime.now().strftime('%Y%m%d')}.log")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(log_file, encoding="utf-8"),
+        logging.StreamHandler()
+    ]
+)
+
 if sys.platform == "win32":
     import win32crypt
 
 from PowerBIRegressionTester import PowerBIRegressionTester
 
 class PowerBIRegressionTesterApp:
-    CONFIG_FILE = os.path.expanduser("~/.pbi_regression_tester_gui5.json")
+    CONFIG_FILE = os.path.expanduser("~/.pbi_regression_tester_config.json")
 
     def __init__(self, root):
-        print("Initializing PowerBIRegressionTesterApp...")
+        logging.info("Initializing PowerBIRegressionTesterApp...")
 
         self.root = root
         self.root.title("Power BI Regression Testing")
@@ -46,8 +62,6 @@ class PowerBIRegressionTesterApp:
             self.load_config_to_fields(self.project_folder_dropdown.get())
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
-
-        self.adomd_assembly_diagnostics()
 
         # self.test_adomd_load()
 
@@ -98,45 +112,6 @@ class PowerBIRegressionTesterApp:
     #     dialog.wait_window()
     #     return result["value"]
 
-
-    def adomd_assembly_diagnostics(self):
-        # Try loading the assembly by name
-        print("\n=== Attempting to load ADOMD.NET assembly by name ===")
-        clr.AddReference('Microsoft.AnalysisServices.AdomdClient')
-        from Microsoft.AnalysisServices.AdomdClient import AdomdConnection, AdomdCommand # type: ignore
-        print("✅ Successfully loaded ADOMD.NET assembly by name")
-
-        target = None
-        for asm in System.AppDomain.CurrentDomain.GetAssemblies():
-            if asm.GetName().Name == "Microsoft.AnalysisServices.AdomdClient":
-                target = asm
-                break
-
-        # This is a fallback if the assembly is loaded
-        # The test_adomd_load will fail before this code is run
-        # This if statement will likely never evaluate to True at this point
-        # This method is more of a diagnostic to see which versions of the assembly are loaded
-        if not target:
-            print("❌ ADOMD.NET assembly not found in loaded assemblies.")
-            print("Ensure ADOMD.NET is installed and the path is correct.")
-            print("https://learn.microsoft.com/en-us/analysis-services/client-libraries")
-            print("dotnet add package Microsoft.AnalysisServices.AdomdClient --version 19.103.2")
-            return
-
-        # Gather info
-        asm_path = target.Location
-        asm_ver = target.GetName().Version
-        file_ver = FileVersionInfo.GetVersionInfo(asm_path).FileVersion
-        prod_ver = FileVersionInfo.GetVersionInfo(asm_path).ProductVersion
-        in_gac = target.GlobalAssemblyCache
-
-        # Output results
-        print("✅ ADOMD.NET assembly detected")
-        print(f"Assembly path   : {asm_path}")
-        print(f"Assembly version: {asm_ver}")
-        print(f"File version    : {file_ver}")
-        print(f"Product version    : {prod_ver}")
-        print(f"Loaded from GAC : {in_gac}")
 
     # def log(self, msg):
     #     print(f"[ADOMD Loader] {msg}")
@@ -917,11 +892,13 @@ class PowerBIRegressionTesterApp:
                 test_result = tester.test_connection()
                 if test_result == "True":
                     messagebox.showinfo("Connection Test", "Connection successful!", parent=dialog)
+                    logging.info("Connection successful!")
                 else:
-                    messagebox.showerror("Connection Test", f"Connection failed: {test_result}", parent=dialog)
-                    self.test_adomd_load()
+                    messagebox.showerror("Connection Test", test_result, parent=dialog)
+                    logging.error("Connection failed")
             except Exception as e:
                 messagebox.showerror("Connection Test", f"Connection failed:\n{e}", parent=dialog)
+                logging.exception("test_connection failed")
 
 
         interactive_var.trace_add("write", toggle_fields)
@@ -2206,16 +2183,79 @@ def thread_exception_handler(args):
 sys.excepthook = log_and_show_exception
 threading.excepthook = thread_exception_handler
 
+
+def adomd_assembly_diagnostics():
+    # Try loading the assembly by name
+    logging.info("\n=== Attempting to load ADOMD.NET assembly by name ===")
+    clr.AddReference('Microsoft.AnalysisServices.AdomdClient')
+    from Microsoft.AnalysisServices.AdomdClient import AdomdConnection, AdomdCommand # type: ignore
+    logging.info("✅ Successfully loaded ADOMD.NET assembly by name")
+
+    # # ------------------------
+    # # Check MSOLAP OLE DB Provider (native)
+    # # ------------------------
+    # # It registers in the Windows Registry under CLSID
+    # try:
+    #     clsid = r"SOFTWARE\Microsoft\Microsoft SQL Server\MSOLAP.8"
+    #     access_flag = winreg.KEY_WOW64_32KEY | winreg.KEY_READ
+    #     with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, clsid, 0, access_flag):
+    #         msolap_ok = True
+    #         print("[INFO] MSOLAP OLE DB Provider found in registry")
+    # except FileNotFoundError:
+    #     try:
+    #         # Check 64-bit registry path as well
+    #         clsid = r"SOFTWARE\Microsoft\Microsoft SQL Server\MSOLAP.8"
+    #         access_flag = winreg.KEY_WOW64_64KEY | winreg.KEY_READ
+    #         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, clsid, 0, access_flag):
+    #             msolap_ok = True
+    #             print("[INFO] MSOLAP OLE DB Provider found in registry (64-bit)")
+    #     except FileNotFoundError:
+    #         print("[WARNING] MSOLAP OLE DB Provider not found")
+
+
+    target = None
+    for asm in System.AppDomain.CurrentDomain.GetAssemblies():
+        if asm.GetName().Name == "Microsoft.AnalysisServices.AdomdClient":
+            target = asm
+            break
+    
+    # This is a fallback if the assembly is loaded
+    # The test_adomd_load will fail before this code is run
+    # This if statement will likely never evaluate to True at this point
+    # This method is more of a diagnostic to see which versions of the assembly are loaded
+    if not target:
+        logging.info("❌ ADOMD.NET assembly not found in loaded assemblies.")
+        logging.info("Ensure ADOMD.NET is installed and the path is correct.")
+        logging.info("https://learn.microsoft.com/en-us/analysis-services/client-libraries")
+        logging.info("dotnet add package Microsoft.AnalysisServices.AdomdClient --version 19.103.2")
+        return
+
+    # Gather info
+    asm_path = target.Location
+    asm_ver = target.GetName().Version
+    file_ver = FileVersionInfo.GetVersionInfo(asm_path).FileVersion
+    prod_ver = FileVersionInfo.GetVersionInfo(asm_path).ProductVersion
+    in_gac = target.GlobalAssemblyCache
+
+    # Output results
+    logging.info("✅ ADOMD.NET assembly detected")
+    logging.info(f"Assembly path   : {asm_path}")
+    logging.info(f"Assembly version: {asm_ver}")
+    logging.info(f"File version    : {file_ver}")
+    logging.info(f"Product version    : {prod_ver}")
+    logging.info(f"Loaded from GAC : {in_gac}")
+
+
 def test_adomd_load():
     try:
         clr.AddReference('Microsoft.AnalysisServices.AdomdClient')
         return True
     except Exception as e:
 
-        # ------------------------
-        # Check MSOLAP OLE DB Provider (native)
-        # ------------------------
-        # It registers in the Windows Registry under CLSID
+        # # ------------------------
+        # # Check MSOLAP OLE DB Provider (native)
+        # # ------------------------
+        # # It registers in the Windows Registry under CLSID
         # try:
         #     clsid = r"SOFTWARE\Microsoft\Microsoft SQL Server\MSOLAP.8"
         #     access_flag = winreg.KEY_WOW64_32KEY | winreg.KEY_READ
@@ -2233,8 +2273,6 @@ def test_adomd_load():
         #     except FileNotFoundError:
         #         print("[WARNING] MSOLAP OLE DB Provider not found")
 
-
-
         # Custom dialog using Toplevel for a button
         dialog = tk.Tk()
         dialog.withdraw()  # Hide root window
@@ -2242,25 +2280,29 @@ def test_adomd_load():
         error_dialog.title("ADOMD.NET Not Found")
         error_dialog.resizable(False, False)
         error_dialog.grab_set()
-        tk.Label(error_dialog, text="❌ ADOMD.NET assembly could not be found.\n \
-                    Please ensure it is installed.\n \
-                    They can be installed from https://learn.microsoft.com/en-us/analysis-services/client-libraries\n \
-                    Install MSOLAP via the downloadable Windows Installer\n \
-                    Install ADOMD from Nuget at https://www.nuget.org/packages/Microsoft.AnalysisServices.AdomdClient"
-                    , padx=20, pady=10, justify="left",   # Left-justify multiple lines
-                    anchor="w")        # Anchor text to the left within the label).pack()
+        error_message = f"❌ ADOMD.NET assembly could not be found.\n \
+        Please ensure it is installed.\n \
+        They can be installed from https://learn.microsoft.com/en-us/analysis-services/client-libraries\n \
+        Install MSOLAP via the downloadable Windows Installer\n \
+        Install ADOMD from Nuget at https://www.nuget.org/packages/Microsoft.AnalysisServices.AdomdClient"
+        tk.Label(error_dialog, text=error_message, padx=20, pady=10, justify="left",anchor="w").pack()
         btn_frame = tk.Frame(error_dialog)
         btn_frame.pack(pady=10)
         tk.Button(btn_frame, text="Show Details", command=lambda: messagebox.showinfo("Full Exception", e, parent=dialog)).pack(side="left", padx=5)
         tk.Button(btn_frame, text="OK", command=error_dialog.destroy).pack(side="left", padx=5)
         error_dialog.wait_window()
         dialog.destroy()
+
+        logging.exception(error_message)
         return False
 
 if __name__ == "__main__":
     try:
         if not test_adomd_load():
-            sys.exit(1)  
+            logging.error(f"[ERROR] ADOMD.NET assembly could not be loaded. Please install it.")
+        else:
+            adomd_assembly_diagnostics()
+            # sys.exit(1)
         # Do not start app if ADOMD.NET is missing
         # def tk_callback_exception_handler(exc, val, tb):
         #     error_msg = "".join(traceback.format_exception(exc, val, tb))
@@ -2279,5 +2321,5 @@ if __name__ == "__main__":
     except Exception as e:
         # This will catch exceptions in the main thread
         error_msg = traceback.format_exc()
-        print(error_msg)
+        logging.exception(error_msg)
         messagebox.showerror("Fatal Error", f"An unexpected error occurred:\n\n{e}")

@@ -13,6 +13,8 @@ import clr
 from SetupPyadomd import PyadomdSetup
 from pyadomd import Pyadomd
 
+import logging
+
 if sys.platform == "win32":
     import win32crypt
 
@@ -51,8 +53,8 @@ class PowerBIRegressionTester:
             pbi_report_folder (str): Path to the folder containing the Power BI report definition.
         """
         clr.AddReference("System")
-        import System
-        from System.Net import ServicePointManager, SecurityProtocolType
+        import System # type: ignore
+        from System.Net import ServicePointManager, SecurityProtocolType # type: ignore
 
         # Force TLS 1.2
         # This is necessary for secure connections to Power BI services when using an interactive login.
@@ -241,7 +243,7 @@ class PowerBIRegressionTester:
                 decrypted_data = self.decrypt_data(encrypted_data)
                 cache.deserialize(decrypted_data)
             except Exception as e:
-                print(f"⚠ Failed to decrypt cache: {e}")
+                logging.error(f"⚠ Failed to decrypt cache: {e}")
         return cache
 
     def save_cache(self, cache: msal.SerializableTokenCache):
@@ -367,7 +369,7 @@ class PowerBIRegressionTester:
                             if data.get("name") == visual_id:
                                 return file_path
                     except Exception as e:
-                        print(f"Error reading {file_path}: {e}")
+                        logging.exception(f"Error reading {file_path}")
         return None
 
     # def get_page_display_name(self, visual_json_path):
@@ -409,7 +411,7 @@ class PowerBIRegressionTester:
                     if visual_id:
                         visualid_to_pagename[visual_id] = page_name
                 except Exception as e:
-                    print(f"Error reading {visual_json_path}: {e}")
+                    logging.exception(f"Error reading {visual_json_path}")
         return visualid_to_pagename
 
     # def add_page_names_to_df(self, df, report_folder):
@@ -698,7 +700,7 @@ class PowerBIRegressionTester:
                 else:
                     filtered_df.loc[idx, 'Query Hash'] = None
             except Exception as e:
-                print(f"Error executing query {query_id}: {e}\n")
+                logging.exception(f"Error executing query {query_id}")
                 raise
         return filtered_df
 
@@ -718,7 +720,7 @@ class PowerBIRegressionTester:
             instance_df = instance
         if isinstance(instance, str):
             if not self.instance_exists(instance):
-                print(f"Instance '{instance}' does not exist. Please run the instance first.")
+                logging.info(f"Instance '{instance}' does not exist. Please run the instance first.")
                 sys.exit(1)
 
             instance_one_folder = os.path.join(self.instance_folder_base, instance)
@@ -727,7 +729,7 @@ class PowerBIRegressionTester:
 
         baseline_exists = os.path.isfile(self.baseline_parquet_file)
         if not baseline_exists:
-            print("Baseline file does not exist. Please create a baseline first.")
+            logging.info("Baseline file does not exist. Please create a baseline first.")
             sys.exit(1)
         baseline_df = pd.read_parquet(self.baseline_parquet_file)
 
@@ -751,7 +753,7 @@ class PowerBIRegressionTester:
     
     def compare_instances(self, instance_one, instance_two, ignore_list):
         if not self.instance_exists(instance_one):
-            print(f"Instance '{instance_one}' does not exist. Please run the instance first.")
+            logging.info(f"Instance '{instance_one}' does not exist. Please run the instance first.")
             sys.exit(1)
 
         instance_one_folder = os.path.join(self.instance_folder_base, instance_one)
@@ -759,7 +761,7 @@ class PowerBIRegressionTester:
         instance_one_df = pd.read_parquet(instance_one_parquet_file)
 
         if not self.instance_exists(instance_one):
-            print(f"Instance '{instance_one}' does not exist. Please run the instance first.")
+            logging.info(f"Instance '{instance_one}' does not exist. Please run the instance first.")
             sys.exit(1)
 
         instance_two_folder = os.path.join(self.instance_folder_base, instance_two)
@@ -1080,7 +1082,10 @@ class PowerBIRegressionTester:
                 return "True"
         except Exception as e:
             # If an error occurs, return False
-            return f"Connection Failed {e}"
+            error_message = f"Connection failed"
+            logging.exception(error_message)
+            # Return a message indicating the connection failure
+            return error_message
 
     def run_single_query(self, query):
         """
@@ -1110,7 +1115,7 @@ class PowerBIRegressionTester:
                     try:
                         result_rows = cur.fetchall()
                     except Exception as e:
-                        print(f"Error fetching results for query: {e}")
+                        logging.exception(f"Error fetching results for query: {query}")
                         result_rows = []
 
                     if result_rows:
