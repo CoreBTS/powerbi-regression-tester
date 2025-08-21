@@ -7,10 +7,8 @@ import json
 import glob
 import hashlib
 import pandas as pd
-import importlib.util
 from enum import Enum
 import clr
-from SetupPyadomd import PyadomdSetup
 from pyadomd import Pyadomd
 
 import logging
@@ -96,9 +94,6 @@ class PowerBIRegressionTester:
         self.power_bi_perf_analyzer_query_folder = os.path.join(self.project_folder, self.QUERIES_BASE_FOLDER, self.POWER_BI_PERF_ANALYZER_QUERY_FOLDER_NAME)
 
         self._connection_string_value = None
-
-        # setup = PyadomdSetup()
-        # setup.setup()
 
         # adomd_path = r'C:\Program Files\Microsoft.NET\ADOMD.NET\160'
 
@@ -1105,8 +1100,8 @@ class PowerBIRegressionTester:
                 # return pd.DataFrame(rows, columns=columns)
 
                 # result_set_index = 0
-                row_count = ""
-                resultset_hashes = []
+                # row_count = ""
+                # resultset_hashes = []
                 has_next = True
                 dataframes = []
                 while has_next:

@@ -1294,19 +1294,16 @@ class PowerBIRegressionTesterApp:
                             tag = "diff" if row["Query Hash"] != row["Query Hash Baseline"] else "same"
                         elif "Row Hash" in display_df.columns and "Row Hash_baseline" in display_df.columns:
                             tag = "diff" if row["Row Hash"] != row["Row Hash_baseline"] else "same"
-                        else:
-                            tag = "diff" if len(set([str(row[col]) for col in columns])) > 1 else "same"
+                        # else:
+                        # This doesn't make sense as it is getting a list of the values from each columns ahd checking if there is more than one
+                        #     tag = "diff" if len(set([str(row[col]) for col in columns])) > 1 else "same"
                     values = [
                         (
                             str(row[col])[:20] + "..." if col.lower() == "query" and len(str(row[col])) > 20 else str(row[col])
                         ).replace('\n\t', ' ').replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ').replace('\t', ' ')
-                        for col in columns
+                        for col in display_columns
                     ]
                     tree.insert("", "end", iid=row_idx, values=values, tags=(tag,))
-                # Optionally update status bar
-                # status = "Showing all queries" if view_all_var.get() else "Showing filtered queries"
-                # status_var.set(status)
-
 
             # --- Header ---
             header_frame = ttk.Frame(result_window)
@@ -1338,8 +1335,12 @@ class PowerBIRegressionTesterApp:
             tree_frame = ttk.Frame(result_window)
             tree_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
+            # Setup columns
+            # Exclude "Hash Match" column from display
             columns = list(df.columns)
-            tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=30, selectmode="browse")
+            display_columns = [col for col in columns if col != "Hash Match"]
+
+            tree = ttk.Treeview(tree_frame, columns=display_columns, show="headings", height=30, selectmode="browse")
             tree.pack(side="left", fill="both", expand=True)
 
             # Add scrollbars
@@ -1351,10 +1352,6 @@ class PowerBIRegressionTesterApp:
             hsb.pack(fill="x")
             tree.configure(xscrollcommand=hsb.set)
 
-            # Setup columns
-            # Exclude "Hash Match" column from display
-            display_columns = [col for col in columns if col != "Hash Match"]
-            tree["columns"] = display_columns
             for col in display_columns:
                 tree.heading(col, text=col, command=lambda _col=col: treeview_sort_column(tree, _col, False))
                 tree.column(col, width=180 if col.lower() == "query" else 120, anchor="w", stretch=True)
@@ -1464,14 +1461,36 @@ class PowerBIRegressionTesterApp:
             def on_double_click():
                 if hasattr(tree, 'clicked_cell'):
                     row_idx, col_idx = tree.clicked_cell
-                    col_name = df.columns[col_idx]
+                    # col_name = df.columns[col_idx]
+                    col_name = "Query"
                     full_text = cell_values.get((row_idx, col_name), "")
                     popup = tk.Toplevel(result_window)
                     popup.title(f"Full text: {col_name}")
-                    text_box = tk.Text(popup, wrap='word', width=80, height=10)
+
+                    # Frame for text and scrollbars
+                    text_frame = ttk.Frame(popup)
+                    text_frame.pack(expand=True, fill='both')
+
+                    # Create Text widget
+                    text_box = tk.Text(text_frame, wrap='none', width=80, height=10)
                     text_box.insert('1.0', str(full_text))
-                    text_box.pack(expand=True, fill='both')
                     text_box.config(state='normal')
+                    text_box.grid(row=0, column=0, sticky="nsew")
+
+                    # Add vertical scrollbar
+                    y_scroll = ttk.Scrollbar(text_frame, orient="vertical", command=text_box.yview)
+                    y_scroll.grid(row=0, column=1, sticky="ns")
+                    text_box.config(yscrollcommand=y_scroll.set)
+
+                    # Add horizontal scrollbar
+                    x_scroll = ttk.Scrollbar(text_frame, orient="horizontal", command=text_box.xview)
+                    x_scroll.grid(row=1, column=0, sticky="ew")
+                    text_box.config(xscrollcommand=x_scroll.set)
+
+                    # Configure grid weights
+                    text_frame.rowconfigure(0, weight=1)
+                    text_frame.columnconfigure(0, weight=1)
+
                     def copy_to_clipboard():
                         popup.clipboard_clear()
                         popup.clipboard_append(str(full_text))
@@ -2167,12 +2186,14 @@ def log_and_show_exception(exc_type, exc_value, exc_traceback):
         return
 
     error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-    log_dir = os.path.join(os.getcwd(), "logs")
-    os.makedirs(log_dir, exist_ok=True)
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = os.path.join(log_dir, f"error_{timestamp}.log")
-    with open(log_file, "w", encoding="utf-8") as f:
-        f.write(error_msg)
+    logging.exception(f"Unhandled exception occurred: {error_msg}", exc_info=(exc_type, exc_value, exc_traceback))
+
+    # log_dir = os.path.join(os.getcwd(), "logs")
+    # os.makedirs(log_dir, exist_ok=True)
+    # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # log_file = os.path.join(log_dir, f"error_{timestamp}.log")
+    # with open(log_file, "w", encoding="utf-8") as f:
+    #     f.write(error_msg)
 
     messagebox.showerror("Unhandled Exception", f"An unexpected error occurred:\n\n{exc_value}\n\nSee log:\n{log_file}")
 
