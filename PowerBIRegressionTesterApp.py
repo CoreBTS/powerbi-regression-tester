@@ -345,7 +345,7 @@ class PowerBIRegressionTesterApp:
         ttk.Button(baseline_frame, text="New / Edit Baseline", command=lambda: self.manage_instance("Baseline")).grid(row=0, column=0, padx=(5, 2), pady=5, sticky='w', ipadx=12)
         # ttk.Button(baseline_frame, text="Edit Baseline", command=lambda: self.create_instance("Baseline")).grid(row=0, column=1, padx=(2, 2), pady=5, sticky='w')
         ttk.Button(baseline_frame, text="View Baseline Queries", command=lambda: self.view("Baseline")).grid(row=0, column=2, padx=(2, 5), pady=5, sticky='w', ipadx=12)
-        ttk.Button(baseline_frame, text="Update Baseline Queries", command=self.run_baseline).grid(row=0, column=3, padx=(2, 5), pady=5, sticky='w', ipadx=12)
+        ttk.Button(baseline_frame, text="Update Baseline", command=self.run_baseline).grid(row=0, column=3, padx=(2, 5), pady=5, sticky='w', ipadx=12)
 
         # --- Instance Selection Frame ---
         instance_frame = ttk.LabelFrame(self.root, text="Instance", padding=10, relief="ridge", borderwidth=3)
@@ -360,7 +360,7 @@ class PowerBIRegressionTesterApp:
         ttk.Button(instance_frame, text="Edit", command=lambda: self.manage_instance(self.instance_dropdown.get().strip())).grid(row=0, column=3, padx=2, sticky='w', ipadx=12)
         ttk.Button(instance_frame, text="Delete", command=self.delete_current_instance).grid(row=0, column=4, padx=2, sticky='w', ipadx=12)
         ttk.Button(instance_frame, text="View Queries", command=lambda: self.view(self.instance_dropdown.get().strip())).grid(row=0, column=5, padx=2, sticky='w', ipadx=12)
-        ttk.Button(instance_frame, text="Update Queries", command=self.run_selected_instance).grid(row=0, column=6, padx=2, sticky='w', ipadx=12)
+        ttk.Button(instance_frame, text="Update Instance", command=self.run_selected_instance).grid(row=0, column=6, padx=2, sticky='w', ipadx=12)
 
         # --- Action Buttons Frame ---
         action_frame = ttk.LabelFrame(self.root, text="Actions", padding=10, relief="ridge", borderwidth=3)
@@ -377,7 +377,7 @@ class PowerBIRegressionTesterApp:
         # File menu (add more items as needed)
         file_menu = tk.Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Clear Interactive Credentials", command=self.clear_interactive_credentials)
+        file_menu.add_command(label="Clear Interactive Credentials Cache", command=self.clear_interactive_credentials)
 
         # --- Status Bar ---
         # self.status_var = tk.StringVar()
@@ -850,7 +850,7 @@ class PowerBIRegressionTesterApp:
             user_entry.config(state="disabled" if interactive_var.get() or local_instance_var.get() else "normal")
             pass_entry.config(state="disabled" if interactive_var.get() or local_instance_var.get() else "normal")
             server_entry.config(state="disabled" if interactive_var.get() and not xmla_endpoint_var.get() else "normal")
-            tenant_entry.config(state="normal" if local_instance_var.get() or xmla_endpoint_var.get() else "disabled")
+            tenant_entry.config(state="normal" if interactive_var.get() or xmla_endpoint_var.get() else "disabled")
             db_entry.config(state="normal")
             if local_instance_var.get():
                 xmla_endpoint_var.set(False)
@@ -952,6 +952,15 @@ class PowerBIRegressionTesterApp:
                     if not isinstance(result["tenant_id"], str) or not guid_regex.match(result["tenant_id"]):
                         messagebox.showerror("Error", f"Tenant ID '{result['tenant_id']}' is not a valid GUID.", parent=dialog)
                         return False
+                    
+                    if not all([result["database_name"]]):
+                        messagebox.showerror("Error", "A Database GUID is required for interactive authentication.", parent=dialog)
+                        return False
+                    
+                    if not result["xmla_endpoint"]:
+                        if not isinstance(result["database_name"], str) or not guid_regex.match(result["database_name"]):
+                            messagebox.showerror("Error", f"Database ID '{result['database_name']}' is not a valid GUID.", parent=dialog)
+                            return False
                 else:
                     if result["xmla_endpoint"]:
                         if not all([result["server_name"], result["database_name"], result["user_id"], result["password"], result["tenant_id"]]):
@@ -1245,16 +1254,19 @@ class PowerBIRegressionTesterApp:
             project = self.get_project(self.project_folder_var.get())
             ignore_list = project.get("queriesToIgnore", []) if project else []
 
-            if not tester.instance_exists(instance1) or not tester.instance_exists(instance2):
-                messagebox.showerror("Error", "One or both selected instances do not exist.")
-                return
-            df = tester.compare_instances(instance1, instance2, ignore_list)
-            if df is not None and not df.empty:
-                self.show_result(df, instance1, instance2)
-            else:
-                messagebox.showinfo("Compare", "No differences found.")
-            dialog.destroy()
-
+            self.set_wait_cursor(True)
+            try:
+                if not tester.instance_exists(instance1) or not tester.instance_exists(instance2):
+                    messagebox.showerror("Error", "One or both selected instances do not exist.")
+                    return
+                df = tester.compare_instances(instance1, instance2, ignore_list)
+                if df is not None and not df.empty:
+                    self.show_result(df, instance1, instance2)
+                else:
+                    messagebox.showinfo("Compare", "No differences found.")
+                dialog.destroy()
+            finally:
+                self.set_wait_cursor(False)
         tk.Button(dialog, text="Compare", command=do_compare, bg="orange").grid(row=1, column=0, columnspan=2, pady=10)
         dialog.grab_set()
         dialog.transient(self.root)
@@ -2055,6 +2067,26 @@ class PowerBIRegressionTesterApp:
             return
 
         self.save_instance_to_project(self.project_folder_var.get(), instance_data)
+
+        # Prompt user with a Yes/No dialog to run the instance now
+        if instance_data.get("instance_name") and instance_data.get("instance_name").strip():
+            run_now = messagebox.askyesno(
+                "Run Instance",
+                f"Do you want to run the instance '{instance_data['instance_name']}' now?"
+            )
+            if run_now:
+                self.set_wait_cursor(True)
+                try:
+                    self.run_selected_instance()
+                finally:
+                    self.set_wait_cursor(False)
+
+        #prompt user to with a Yes or No dialog to run the instance now
+        # instance_data = self.prompt_instance_details(instance)
+        # if not instance_data:
+        #     return
+
+
         # if instance_data.get("interactive"):
         #     conn_str = None  # Or handle interactive logic in your tester
         # else:
@@ -2095,14 +2127,18 @@ class PowerBIRegressionTesterApp:
         project = self.get_project(project_folder)
         ignore_list = project.get("queriesToIgnore", []) if project else []
 
-        if tester.instance_exists(instance_name):
-            df = tester.compare(instance_name, ignore_list)
-            if df is not None and not df.empty:
-                self.show_result(df, 'Baseline', instance_name)
+        self.set_wait_cursor(True)
+        try:
+            if tester.instance_exists(instance_name):
+                df = tester.compare(instance_name, ignore_list)
+                if df is not None and not df.empty:
+                    self.show_result(df, 'Baseline', instance_name)
+                else:
+                    messagebox.showinfo("Compare", "No differences found.")
             else:
-                messagebox.showinfo("Compare", "No differences found.")
-        else:
-            messagebox.showerror("Error", f"The instance '{instance_name}' does not exist.")
+                messagebox.showerror("Error", f"The instance '{instance_name}' does not exist.")
+        finally:
+            self.set_wait_cursor(False)
 
     def create_regession_tester(self, project_folder_var, project_report_folder_var, instance):
         data_source = instance.get('server_name')
@@ -2135,6 +2171,10 @@ class PowerBIRegressionTesterApp:
             messagebox.showinfo("Credentials Cleared", "Interactive login credential cache has been cleared.")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to clear credentials:\n{e}")
+
+    def set_wait_cursor(self, on=True):
+        self.root.config(cursor="wait" if on else "")
+        self.root.update_idletasks()
 
 class ToolTip(object):
     def __init__(self, widget, text):

@@ -10,6 +10,7 @@ import pandas as pd
 from enum import Enum
 import clr
 from pyadomd import Pyadomd
+import requests
 
 import logging
 
@@ -1170,3 +1171,78 @@ class PowerBIRegressionTester:
                     dataframes.append(result_df)
                     has_next = cur.nextresult()
         return dataframes
+
+    def call_api(self, url, headers=None, body=None, method="GET", timeout=30):
+        """
+        Generic method to make an API call with error handling.
+
+        Args:
+            url (str): The API endpoint URL.
+            headers (dict): HTTP headers.
+            body (dict or str): Request body (for POST/PUT).
+            method (str): HTTP method ("GET", "POST", etc.).
+            timeout (int): Timeout in seconds.
+
+        Returns:
+            dict or str: Response JSON if possible, else raw text.
+        Raises:
+            Exception: If the request fails.
+        """
+        try:
+            if method.upper() == "GET":
+                response = requests.get(url, headers=headers, timeout=timeout)
+            elif method.upper() == "POST":
+                response = requests.post(url, headers=headers, json=body, timeout=timeout)
+            # elif method.upper() == "PUT":
+            #     response = requests.put(url, headers=headers, json=body, timeout=timeout)
+            # elif method.upper() == "DELETE":
+            #     response = requests.delete(url, headers=headers, timeout=timeout)
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
+
+            response.raise_for_status()
+            try:
+                return response.json()
+            except Exception:
+                return response.text
+        except Exception as e:
+            logging.error(f"API call failed: {e}")
+            raise
+
+    def poll_api_status(self, status_url, headers=None, interval=5, timeout=300, status_key="status", complete_values=("Succeeded", "Completed"), error_values=("Failed", "Error")):
+        """
+        Polls a status endpoint for long-running API calls until completion or timeout.
+
+        Args:
+            status_url (str): The API endpoint to poll for status.
+            headers (dict): HTTP headers.
+            interval (int): Seconds between polls.
+            timeout (int): Maximum seconds to wait.
+            status_key (str): Key in response JSON indicating status.
+            complete_values (tuple): Values indicating completion.
+            error_values (tuple): Values indicating error.
+
+        Returns:
+            dict or str: Final response from the status endpoint.
+        Raises:
+            Exception: If the operation fails or times out.
+        """
+        import time
+        start_time = time.time()
+        while True:
+            try:
+                response = self.call_api(status_url, headers=headers, method="GET")
+                # If response is not dict, treat as error
+                if not isinstance(response, dict):
+                    raise Exception(f"Unexpected response type: {type(response)}")
+                status = response.get(status_key)
+                if status in complete_values:
+                    return response
+                if status in error_values:
+                    raise Exception(f"API call failed with status: {status}")
+            except Exception as e:
+                logging.error(f"Status polling failed: {e}")
+                raise
+            if time.time() - start_time > timeout:
+                raise TimeoutError(f"API status polling timed out after {timeout} seconds")
+            time.sleep(interval)
