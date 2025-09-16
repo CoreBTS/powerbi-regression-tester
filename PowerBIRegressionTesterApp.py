@@ -40,7 +40,8 @@ if sys.platform == "win32":
 from PowerBIRegressionTester import PowerBIRegressionTester
 
 class PowerBIRegressionTesterApp:
-    CONFIG_FILE = os.path.expanduser("~/.pbi_regression_tester_config.json")
+    # CONFIG_FILE = os.path.expanduser("~/.pbi_regression_tester_config.json")
+    CONFIG_FILE = os.path.join(os.path.dirname(sys.executable), "pbi_regression_tester_config.json")
 
     def __init__(self, root):
         logging.info("Initializing PowerBIRegressionTesterApp...")
@@ -71,7 +72,7 @@ class PowerBIRegressionTesterApp:
     # def ensure_tenant_id(self):
     #     # Load config (assuming self.configs is your loaded JSON dict)
     #     tenant_id = self.configs.get("tenant_id", None)
-    #     if tenant_id is None:
+    #     if (tenant_id is None):
     #         tenant_id = self.prompt_for_tenant_id()
     #         if tenant_id is not None:  # User didn't cancel
     #             self.configs["tenant_id"] = tenant_id
@@ -286,6 +287,13 @@ class PowerBIRegressionTesterApp:
         # print(f"File version    : {file_ver}")
         # print(f"Loaded from GAC : {in_gac}")
 
+    def run_with_wait_cursor(self, func, *args, **kwargs):
+        self.set_wait_cursor(True)
+        try:
+            return func(*args, **kwargs)
+        finally:
+            self.set_wait_cursor(False)
+
     def encrypt_for_user(self, plaintext):
         if sys.platform != "win32":
             return plaintext  # fallback: no encryption
@@ -360,7 +368,7 @@ class PowerBIRegressionTesterApp:
         ttk.Button(instance_frame, text="Edit", command=lambda: self.manage_instance(self.instance_dropdown.get().strip())).grid(row=0, column=3, padx=2, sticky='w', ipadx=12)
         ttk.Button(instance_frame, text="Delete", command=self.delete_current_instance).grid(row=0, column=4, padx=2, sticky='w', ipadx=12)
         ttk.Button(instance_frame, text="View Queries", command=lambda: self.view(self.instance_dropdown.get().strip())).grid(row=0, column=5, padx=2, sticky='w', ipadx=12)
-        ttk.Button(instance_frame, text="Update Instance", command=self.run_selected_instance).grid(row=0, column=6, padx=2, sticky='w', ipadx=12)
+        ttk.Button(instance_frame, text="Update Instance", command=lambda: self.run_with_wait_cursor(self.run_selected_instance)).grid(row=0, column=6, padx=2, sticky='w', ipadx=12)
 
         # --- Action Buttons Frame ---
         action_frame = ttk.LabelFrame(self.root, text="Actions", padding=10, relief="ridge", borderwidth=3)
@@ -753,14 +761,14 @@ class PowerBIRegressionTesterApp:
         help_btn.grid(row=0, column=2, sticky="w", padx=2)
         ToolTip(help_btn, "The name of this instance cannot be changed for Baseline.")
 
-        ttk.Label(details, text="Server Name:").grid(row=1, column=0, sticky="e", padx=5, pady=4)
+        ttk.Label(details, text="Server:").grid(row=1, column=0, sticky="e", padx=5, pady=4)
         server_entry = ttk.Entry(details, textvariable=server_name_var, width=entry_width)
         server_entry.grid(row=1, column=1, sticky="ew", padx=5, pady=4)
         help_btn = tk.Label(details, text="?", foreground="blue", cursor="question_arrow")
         help_btn.grid(row=1, column=2, sticky="w", padx=2)
         ToolTip(help_btn, "The Power BI server address, XMLA endpoint or local address such as localhost:XXXXX.")
 
-        ttk.Label(details, text="Database Name:").grid(row=2, column=0, sticky="e", padx=5, pady=4)
+        ttk.Label(details, text="Database:").grid(row=2, column=0, sticky="e", padx=5, pady=4)
         db_entry = ttk.Entry(details, textvariable=database_name_var, width=entry_width)
         db_entry.grid(row=2, column=1, sticky="ew", padx=5, pady=4)
         help_btn = tk.Label(details, text="?", foreground="blue", cursor="question_arrow")
@@ -861,6 +869,7 @@ class PowerBIRegressionTesterApp:
             else:
                 xmla_chk.config(state="normal")
                 interactive_chk.config(state="normal")
+                tenant_entry.config(state="normal")
 
         def test_connection_action():
             if not validate_inputs():
@@ -1674,7 +1683,7 @@ class PowerBIRegressionTesterApp:
                         df_list2 = tester2.run_single_query(query_text)  # List of DataFrames
 
                     if (not df_list1 or all(df.empty for df in df_list1)) and (not df_list2 or all(df.empty for df in df_list2)):
-                        messagebox.showinfo("Query Results", "No results returned for this query on either instance.")
+                        messagebox.showinfo("Query Results", "No results returned for this query.")
                         return
 
                     compare_window = tk.Toplevel(self.root)
@@ -2074,10 +2083,15 @@ class PowerBIRegressionTesterApp:
                 "Run Instance",
                 f"Do you want to run the instance '{instance_data['instance_name']}' now?"
             )
+            
             if run_now:
                 self.set_wait_cursor(True)
                 try:
-                    self.run_selected_instance()
+                    if instance_name == "Baseline":
+                        self.run_baseline()
+                    else:
+                        self.run_selected_instance()
+                    
                 finally:
                     self.set_wait_cursor(False)
 
@@ -2173,7 +2187,18 @@ class PowerBIRegressionTesterApp:
             messagebox.showerror("Error", f"Failed to clear credentials:\n{e}")
 
     def set_wait_cursor(self, on=True):
-        self.root.config(cursor="wait" if on else "")
+        cursor_type = "wait" if on else ""
+        self.root.config(cursor=cursor_type)
+        for widget in self.root.winfo_children():
+            try:
+                widget.config(cursor=cursor_type)
+            except Exception:
+                pass
+            for child in widget.winfo_children():
+                try:
+                    child.config(cursor=cursor_type)
+                except Exception:
+                    pass
         self.root.update_idletasks()
 
 class ToolTip(object):
