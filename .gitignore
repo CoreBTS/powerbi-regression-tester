@@ -3,13 +3,14 @@
 
 token_cache.bin
 
-PowerBIRegressionTesterApp.exe
+Semantic Model Regression Tester/PowerBIRegressionTesterApp.exe
 
 Projects/
 logs/
 build/
 dist/
 
+.venv/
 venv/
 venv2/
 venv3/
