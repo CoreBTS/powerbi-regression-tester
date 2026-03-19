@@ -1,0 +1,27 @@
+**/.pbi/localSettings.json
+**/.pbi/cache.abf
+
+token_cache.bin
+
+Semantic Model Regression Tester/PowerBIRegressionTesterApp.exe
+
+Projects/
+logs/
+build/
+dist/
+
+.venv/
+venv/
+venv2/
+venv3/
+venv-old/
+
+
+Sales & Returns Sample/baseline
+Sales & Returns Sample/instance
+Sales & Returns Sample/Sales & Returns Sample v201912/
+Contoso pbip/baseline
+Contoso pbip/instance
+
+__pycache__/
+*.pyc
