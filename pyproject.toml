@@ -14,7 +14,6 @@ dependencies = [
     "msal==1.33.0",
     "numpy==2.3.2",
     "pandas==2.3.1",
-    "pyadomd==0.1.1",
     "pyarrow==21.0.0",
     "pycparser==2.22",
     "pyjwt==2.10.1",

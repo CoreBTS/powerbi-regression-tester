@@ -218,7 +218,6 @@ dependencies = [
     { name = "msal" },
     { name = "numpy" },
     { name = "pandas" },
-    { name = "pyadomd" },
     { name = "pyarrow" },
     { name = "pycparser" },
     { name = "pyjwt" },
@@ -244,7 +243,6 @@ requires-dist = [
     { name = "msal", specifier = "==1.33.0" },
     { name = "numpy", specifier = "==2.3.2" },
     { name = "pandas", specifier = "==2.3.1" },
-    { name = "pyadomd", specifier = "==0.1.1" },
     { name = "pyarrow", specifier = "==21.0.0" },
     { name = "pycparser", specifier = "==2.22" },
     { name = "pyjwt", specifier = "==2.10.1" },
@@ -258,15 +256,6 @@ requires-dist = [
     { name = "tzdata", specifier = "==2025.2" },
     { name = "urllib3", specifier = "==2.5.0" },
 ]
-
-[[package]]
-name = "pyadomd"
-version = "0.1.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pythonnet" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/92/1a/cbc4b46c1ad13782670d01c6c20d4f2ee7e0f6aeb80dd9e0ba06aa2664b0/pyadomd-0.1.1.tar.gz", hash = "sha256:9b01169c4ce30baedc6d21fa49b1abb2361b9a2953dafed4c0de2f624ddf313c", size = 5272, upload-time = "2022-01-22T08:26:20.143Z" }
 
 [[package]]
 name = "pyarrow"
